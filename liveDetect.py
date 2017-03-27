@@ -3,7 +3,8 @@
 
 @author: stevenbaldassano
 
-This will be called at 30 minute intervals to download data and make predictions
+This script is used for live detection of seizures on the streaming dataset
+This will be called at 30 minute intervals to download data and make predictions.
 
 """
 import numpy as np
@@ -14,6 +15,10 @@ import sys,os
 import glob
 from subprocess import call
 
+# module to split data if there are gaps
+# If there is a gap of less than 0.1 seconds, the gap is ignored
+# If there is a gap larger than 0.1 seconds, the dataset is split and analyzed in two chunks
+# This module is the most time-intensive part of the pipeline, so you could make changes here if you would like
 def split_data(df):
     dfs = []
     toContinue=True
@@ -32,23 +37,14 @@ def split_data(df):
 
 # Need to fill in personal Blackfynn login information here
 bf = Blackfynn(email='you_email_here',password='your_passwd_here')
-# get time-series object
-
-#ts = bf.data.get_timeseries('N:fo:3ca99d71-63e5-4fe1-a7d6-ffe5cd5a54ed')
-#ts = bf.data.get_timeseries('N:fo:856511ca-0d3d-4922-9ed2-991c8e699ec5') #loop recorder
 bf.set_context('Mayo')
-ts = bf.datasets()[0].items[0]
+ts = bf.datasets()[0].items[0] # again, this is set up for 951 now. Need to change this line for a different BF dataset
+# Here we grab the last 30 minutes of data
 tempEnd = datetime.datetime.now()
 tempStart = tempEnd - datetime.timedelta(0,1800)
 
-#ts = bf.data.get_timeseries('N:fo:f6cd4d29-7916-417e-98b2-8d90586febd1')
-#tempStart = datetime.datetime(2016,11,8,19,30,36)
-#tempEnd = datetime.datetime(2016,11,8,19,30,51)
-
-
-#d = bf.data.get_timeseries_data(ts, tempStart, tempEnd)
 d = ts.get_data(start=tempStart,end=tempEnd)
-d = d.drop_duplicates()
+d = d.drop_duplicates() # had some issues with duplicate data points. Remove them if they exist
 if d.shape[0]==0:
     print('no data in time segment...quitting \n')
     exit()
@@ -56,6 +52,7 @@ print('starting split...')
 dfs = split_data(d)
 print('done')
 for df in dfs:
+    # for each chunk of data, organize it into one-second clips
     clipped = df.as_matrix()
     print clipped.shape
     fs = 250
@@ -68,20 +65,21 @@ for df in dfs:
     inputData= np.transpose(temp, (0,2,1))
     
     # here we send the clips into the kaggle algo for detection
-    #output will be a series of 0s and 1s (one for each clip) called preds
-    #for now I will just save the clips and make sure this works. If it does
-    #I will try to do it without saving to make it run faster
+    #output will be a series of seizure probabilities (one for each clip) called preds
+    # For now I will just save the clips
+    #I will later try to modify the algo to do it without saving to make it run faster
     
     for i in range(0,inputData.shape[0]):
         curData = inputData[i,:,:]
         filename = 'R951/R951_test_segment_' + str(i+1) + '.mat'
         sio.savemat(filename,{'data':curData, 'freq':fs})
-    #subprocess.call('liveAlgo/seizure_detection.py')
+
     os.chdir('liveAlgo')
-    #execfile('predict.py')
+    # call the prediction function
     ret = call(['python', 'predict.py'])
     os.chdir('..')
     output = np.genfromtxt('liveAlgo/submissions/preds.csv',delimiter=',')
+    # get the seizure probability of each clip
     preds = output[1:,1]
     #delete intermediate files (test, data-cache, preds)
     r = glob.glob('R951/*')
@@ -97,15 +95,16 @@ for df in dfs:
     for i in r:
         os.remove(i)
     
-    #end segment that should be replaced
-    
+    # here we convolve over a few seconds to make the actual seizure calls
+    # we look at 3 consecutive seconds, and need the sum of the seizure probabilities to be over 2.5
     finalPreds = np.convolve(preds, [1,1,1])>=2.5
+    # find the indices when a seizure is detected
     idx = np.where(finalPreds)[0]
-    #compute amount of time before detection to get the right timestamp
     
     if idx.any():
         #right now we will just look at the first detected seizure. It is possible that 
-        #there are multiple seizures in the 30 second window
+        #there are multiple seizures in the 30 minute window
+        # Use this code to get the time stamp of the seizure and write to an output file
         numSteps = idx[0]*fs 
         timeOfDetect = df.iloc[numSteps].name
         with open("szCalls.txt","a") as text_file:
