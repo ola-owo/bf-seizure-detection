@@ -4,20 +4,33 @@
 % NOTE: as the BF platform is in flux, the tsid part is still changing. Right now there is only one dataset on BF
 % and this system is configured to work with that one (R951). When other datasets are added, the pipeline will need adjustments
 
-function trainMaster(username, passwd, tsid, ptname, szfile, interictalfile, fs)
-   fprintf('Pulling seizure clips from Blackfynn...')
-   system(['python pullSzClips.py ' username ' ' passwd ' ' tsid ' ' ptname ' ' szfile])
-   fprtinf('done\n')
-   
-   fprintf('Pulling interictal segments from Blackfynn...')
-   system(['python pullInterictalClips.py ' username ' ' passwd ' ' tsid ' ' ptname ' ' interictalfile])
-   fprintf('done\n')
-   
-   fprintf('Clipping segments and organizing for algorithm training...')
-   clipForAlgoPipeline(fs,ptname)
-   fprintf('done\n')
-   
-   fprintf('Training classifier (make sure train.py has correct target)...')
-   system('python liveAlgo/train.py')
-   fprintf('All done.\nTrained classifier ready for use.\n') 
+% EDIT: updated to work with the new blackfynn api
+% Username/password are no longer needed,
+% Instead it's assumed that the Blackfynn profile is already set up
+
+function trainMaster(szfile, interictalfile, fs)
+    fprintf('Pulling seizure clips from Blackfynn...\n')
+    err = system(['python pullClips.py ictal ' szfile]);
+    if err
+        return
+    else
+        fprintf('done\n')
+    end
+    
+    fprintf('Pulling interictal segments from Blackfynn...\n')
+    err = system(['python pullClips.py interictal ' interictalfile]);
+    if err
+        return
+    else
+        fprintf('done\n')
+    end
+    
+    fprintf('Clipping segments and organizing for algorithm training...\n')
+    clipForAlgoPipeline(fs, 'Old Ripley')
+    fprintf('done\n')
+    
+    %%% Don't train yet
+    % fprintf('Training classifier (make sure train.py has correct target)...')
+    % system('python liveAlgo/train.py')
+    % fprintf('All done.\nTrained classifier ready for use.\n') 
 end

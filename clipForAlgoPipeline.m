@@ -2,12 +2,13 @@
 % it takes in .mat files for each seizure and interictal segment
 
 function clipForAlgoPipeline(fs, ptName)
+leads = 1:4;
 
-leads = 1:4;  
 % make a directory for this subject's data    
-if ~exit(ptName,'dir')
+if ~exist (ptName, 'dir')
     mkdir(ptName)
 end
+
 % set up channels names in correct format
 for i = 1:numel(leads)
     field = ['X_Ch' num2str(i) '_'];
@@ -21,7 +22,7 @@ while 1
     try
         load(['sz' num2str(i) '.mat'])
     catch
-        fprintf('All %g seizures loaded\n', i-1);
+        fprintf('All %g seizures loaded.\n', i-1);
         break
     end
     curData = clip;
@@ -43,7 +44,6 @@ while 1
         fprintf('All %g interictal segments loaded\n', i-1);
         break
     end
-
     curData = clip;  
             
     numClips = floor(size(curData,1)/fs);       
@@ -59,7 +59,7 @@ end
 function netClips = clipData(curData,fs,channels,ptName,numClips,tempClipNum,ictal)
     % will clip the data into one second chunks and then save each of them
     % in the appropriate format
-    freq = fs; 
+    freq = fs;
     pos = 0;
     skippedForNans = 0;
     for c = 1:numClips
@@ -84,5 +84,3 @@ function netClips = clipData(curData,fs,channels,ptName,numClips,tempClipNum,ict
     end
     netClips = numClips - skippedForNans;
 end
-        
-    
