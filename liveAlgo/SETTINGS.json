@@ -1,5 +1,5 @@
 {
-  "competition-data-dir": "/home1/s/stevennb/gdir/P9-UH2/medtronic_sz",
-  "data-cache-dir": "data-cache",
-  "submission-dir": "submissions"
+  "competition-data-dir": "../seizure-data",
+  "data-cache-dir": "../data-cache",
+  "submission-dir": "../submissions"
 }

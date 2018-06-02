@@ -2,3 +2,8 @@
 *.swp
 *~
 *.pyc
+*annotations.txt
+*.png
+submissions
+data-cache
+seizure-data/*

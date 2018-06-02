@@ -465,7 +465,7 @@ class TimeCorrelation:
 
     def apply(self, data):
         # so that correlation matrix calculation doesn't crash
-	for ch in data:
+        for ch in data:
             if np.alltrue(ch == 0.0):
                 ch[-1] += 0.00001
 
@@ -480,9 +480,6 @@ class TimeCorrelation:
 
         data1 = CorrelationMatrix().apply(data1)
 
-	#if np.isnan(data1).any() or np.isinf(data1).any():
-	#    pdb.set_trace()
-	
         if self.with_eigen:
             w = Eigenvalues().apply(data1)
 

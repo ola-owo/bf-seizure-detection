@@ -9,7 +9,7 @@ import scipy.io as sio
 import sys
 
 clipType = sys.argv[1] # either ictal or interictal
-filename = sys.argv[2]
+annot_file = sys.argv[2]
 
 if clipType == 'ictal':
     outfile_prefix = 'sz'
@@ -21,6 +21,8 @@ else:
 
 # Establish Blackfynn connection
 bf = Blackfynn()
+
+### Load the appropriate TimeSeries
 ts = bf.get("N:package:8d8ebbfd-56ac-463d-a717-d48f5d318c4c") # 'old ripley' data
 # ts = bf.get("N:package:401f556c-4747-4569-b1a8-9e6e50abf919") # 'ripley' data
 
@@ -33,6 +35,7 @@ with open(filename, 'r') as f:
     annots = f.read().splitlines()
 
 # save each clip to file
+num_saved = 0
 for i in range(len(annots)):
     # get clip start/end times
     annot = map(int, annots[i].split())
@@ -52,6 +55,8 @@ for i in range(len(annots)):
 
     # print(df)
     ar = df.as_matrix()
-    filename = '%s%d.mat' % (outfile_prefix, i+1)
-    sio.savemat(filename,{'clip':ar})
-print('%d clips saved.' % i+1)
+    outfile = '%s%d.mat' % (outfile_prefix, i+1)
+    sio.savemat(outfile,{'clip':ar})
+    num_saved = num_saved + 1
+
+print('%d clips saved.' % num_saved)

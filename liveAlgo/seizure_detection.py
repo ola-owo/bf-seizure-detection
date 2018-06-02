@@ -39,9 +39,22 @@ def run_seizure_detection(build_target):
     ts = time.get_millis()
 
     targets = [
-	'R951'
-    ]
+        # 'Ripley',
+        'R950',
 
+        # 'Dog_1',
+        # 'Dog_2',
+        # 'Dog_3',
+        # 'Dog_4',
+        # 'Patient_1',
+        # 'Patient_2',
+        # 'Patient_3',
+        # 'Patient_4',
+        # 'Patient_5',
+        # 'Patient_6',
+        # 'Patient_7',
+        # 'Patient_8'
+    ]
     pipelines = [
         # NOTE(mike): you can enable multiple pipelines to run them all and compare results
         # Pipeline(gen_ictal=False, pipeline=[FFT(), Slice(1, 48), Magnitude(), Log10()]),
@@ -79,7 +92,12 @@ def run_seizure_detection(build_target):
         # (RandomForestClassifier(n_estimators=50, min_samples_split=1, bootstrap=False, n_jobs=4, random_state=0), 'rf50mss1Bfrs0'),
         # (RandomForestClassifier(n_estimators=150, min_samples_split=1, bootstrap=False, n_jobs=4, random_state=0), 'rf150mss1Bfrs0'),
         # (RandomForestClassifier(n_estimators=300, min_samples_split=1, bootstrap=False, n_jobs=4, random_state=0), 'rf300mss1Bfrs0'),
-        (RandomForestClassifier(n_estimators=3000, min_samples_split=1, bootstrap=False, n_jobs=32, random_state=0), 'rf3000mss1Bfrs0'),
+
+        # NOTE(mike): The original submission classifier was min_samples_split=1, but I had to change it to 2 after upgrading scikit.
+        # I'm not even sure min_samples_split=1 makes sense in hindsight, how can you split on 1 sample? Anyway to get the repo functional
+        # again with newer libraries it's now 2.
+        # (RandomForestClassifier(n_estimators=3000, min_samples_split=1, bootstrap=False, n_jobs=4, random_state=0), 'rf3000mss1Bfrs0'),
+        (RandomForestClassifier(n_estimators=3000, min_samples_split=2, bootstrap=False, n_jobs=4, random_state=0), 'rf3000mss2Bfrs0'),
     ]
     cv_ratio = 0.5
 
@@ -109,8 +127,7 @@ def run_seizure_detection(build_target):
                         classifier_filenames.append(task.filename())
 
                 if make_predictions:
-                    #filename = 'submission%d-%s_%s.csv' % (ts, classifier_name, pipeline.get_name())
-                    filename = 'preds.csv'
+                    filename = 'submission%d-%s_%s.csv' % (ts, classifier_name, pipeline.get_name())
                     filename = os.path.join(submission_dir, filename)
                     with open(filename, 'w') as f:
                         print >> f, '\n'.join(guesses)

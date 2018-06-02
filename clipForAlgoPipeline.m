@@ -5,8 +5,8 @@ function clipForAlgoPipeline(fs, ptName)
 leads = 1:4;
 
 % make a directory for this subject's data    
-if ~exist (ptName, 'dir')
-    mkdir(ptName)
+if ~exist (['seizure-data/' ptName], 'dir')
+    mkdir(['seizure-data/' ptName])
 end
 
 % set up channels names in correct format
@@ -66,19 +66,21 @@ function netClips = clipData(curData,fs,channels,ptName,numClips,tempClipNum,ict
         data = curData(:,pos+1:pos+fs);
         pos = pos+fs;
         if any(any(isnan(data)))
+            fprintf('Skipped clip # %d (Some/all data is NaN)\n', c);
             skippedForNans = skippedForNans + 1;
             continue
         end
         if any(all(data'==0))
+            fprintf('Skipped clip # %d (dead channel)\n', c);
             skippedForNans = skippedForNans + 1;
             continue
         end
         data = data - repmat(mean(data,2),1,size(data,2)); %mean normalize each channel signal within the clip. could try without this.
         latency = c-1;
         if ictal
-            save([ptName '/' ptName '_ictal_segment_' num2str(c-skippedForNans+tempClipNum) '.mat'], 'data','channels','freq','latency');
+            save(['seizure-data/' ptName '/' ptName '_ictal_segment_' num2str(c-skippedForNans+tempClipNum) '.mat'], 'data','channels','freq','latency');
         else
-            save([ptName '/' ptName '_interictal_segment_' num2str(c-skippedForNans+tempClipNum) '.mat'], 'data','channels','freq');
+            save(['seizure-data/' ptName '/' ptName '_interictal_segment_' num2str(c-skippedForNans+tempClipNum) '.mat'], 'data','channels','freq');
         end
 
     end
