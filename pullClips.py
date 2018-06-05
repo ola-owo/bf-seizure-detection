@@ -1,62 +1,70 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python2
 """
-Use this to pull seizure data from Blackfynn for the pipeline
+Use this to pull seizure data from Blackfynn for the pipeline.
+Can be called standalone as:
+> python pullClips.py annotFile clipType tsID outDir
+
+NOTE: When training the classifier, the patient name should be listed
+in "targets" inside liveAlgo/seizure_detection.py
 """
 
-from blackfynn import Blackfynn
-from datetime import datetime, timedelta
-import scipy.io as sio
 import sys
+from blackfynn import Blackfynn
+import hickle
+import scipy.io as sio
 
-clipType = sys.argv[1] # either ictal or interictal
-annot_file = sys.argv[2]
+def pullClips(annotFile, clipType, ts, outDir):
+    '''
+    Using annotFile, download clips of type clipType from TimeSeries ts into folder outDir.
+    '''
 
-if clipType == 'ictal':
-    outfile_prefix = 'sz'
-elif clipType == 'interictal':
-    outfile_prefix = 'nonsz'
-else:
-    print 'Invalid clip type "%s" (should be ictal or interictal)' % clipType
-    exit()
+    # Validate clip type
+    if clipType == 'ictal':
+        outfile_prefix = 'sz'
+    elif clipType == 'interictal':
+        outfile_prefix = 'nonsz'
+    else:
+        raise ValueError("Invalid clip type '%s' (should be ictal or interictal)" % clipType)
 
-# Establish Blackfynn connection
-bf = Blackfynn()
+    # get the annotation times from file
+    with open(annotFile, 'r') as f:
+        """
+        each line of the annotation file is formatted as: startTime endTime
+        with times given in microseconds
+        """
+        annots = f.read().splitlines()
 
-### Load the appropriate TimeSeries
-ts = bf.get("N:package:8d8ebbfd-56ac-463d-a717-d48f5d318c4c") # 'old ripley' data
-# ts = bf.get("N:package:401f556c-4747-4569-b1a8-9e6e50abf919") # 'ripley' data
+    # save each clip to file
+    num_saved = 0
+    for i in range(len(annots)):
+        # get clip start/end times
+        annot = map(int, annots[i].split())
+        if not annot:
+            # ignore empty lines in file
+            continue
+        annotStart = annot[0]
+        annotEnd = annot[1]
 
-# get the annotation times in usec from file
-with open(filename, 'r') as f:
-    """
-    each line of the annotation file is formatted as: startTime endTime
-    with times given in microseconds
-    """
-    annots = f.read().splitlines()
+        # pull data for current clip 
+        try:
+            df = ts.get_data(start=annotStart, end=annotEnd)
+        except:
+            print 'Pull failed at', annotStart
+            continue
 
-# save each clip to file
-num_saved = 0
-for i in range(len(annots)):
-    # get clip start/end times
-    annot = map(int, annots[i].split())
-    if not annot:
-        # ignore empty lines
-        continue
-    annotStart = annot[0]
-    annotEnd = annot[1]
+        array = df.transpose().values
+        outfile = '%s/%s%d.hkl' % (outDir, outfile_prefix, i+1)
+        hickle.dump(array, outfile)
+        num_saved = num_saved + 1
 
-    # pull the data for each clip 
-    try:
-        # print('about to pull...')
-        df = ts.get_data(start=annotStart, end=annotEnd)
-    except:
-        print('Pull failed at ' + str(annotStart) + '\n')
-        continue
+    print('%d clips saved.' % num_saved)
 
-    # print(df)
-    ar = df.as_matrix()
-    outfile = '%s%d.mat' % (outfile_prefix, i+1)
-    sio.savemat(outfile,{'clip':ar})
-    num_saved = num_saved + 1
+if __name__ == '__main__':
+    annotFile = sys.argv[1]
+    clipType = sys.argv[2] # either ictal or interictal
+    tsID = sys.argv[3]
+    outDir = sys.argv[4].rstrip('/')
 
-print('%d clips saved.' % num_saved)
+    bf = Blackfynn()
+    ts = bf.get(tsID)
+    pullClips(annotFile, clipType, ts, outDir)

@@ -2,7 +2,9 @@ from collections import namedtuple
 import os.path
 import numpy as np
 import scipy.io
-import common.time as time
+### Edited to work inside blackfynn pipeline:
+# import common.time as time 
+from ..common import time
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_curve, auc

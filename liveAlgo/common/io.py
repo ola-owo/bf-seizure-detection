@@ -1,7 +1,9 @@
 import os
 import hickle as hkl
 import pickle
-import common.time as time
+### Edited to work inside blackfynn pipeline
+# import common.time as time
+import time
 
 def load_hkl_file(filename):
     hkl_filename = filename + '.hkl'

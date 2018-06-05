@@ -40,13 +40,13 @@ def run_seizure_detection(build_target):
 
     targets = [
         # 'Ripley',
-        'R950',
+        # 'R950',
 
         # 'Dog_1',
         # 'Dog_2',
         # 'Dog_3',
         # 'Dog_4',
-        # 'Patient_1',
+        'Patient_1',
         # 'Patient_2',
         # 'Patient_3',
         # 'Patient_4',
