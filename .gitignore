@@ -1,0 +1,13 @@
+*.mat
+*.m
+*.swp
+*~
+*.pyc
+*annotations.txt
+*.png
+*.csv
+clips
+annotations/
+data-cache/
+submissions/
+seizure-data/
