@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 '''
-Plot seizure clips
+Plot (non)seizure clips
 '''
 
 import os
@@ -17,10 +17,11 @@ def plotSz(data, label, channels=4):
     plt.show()
 
 if __name__ == '__main__':
-    ptName = sys.argv[1]
-    clipDir = 'clips/' + ptName
+    clipRoot = sys.argv[1]
+    ptName = sys.argv[2]
+    clipDir = clipRoot + '/' + ptName
     if not os.path.isdir(clipDir):
-        print "Clips not found for patient '%s'" % ptName
+        print "Folder '%s' not found" % clipDir
         sys.exit()
 
     i = 1
@@ -30,5 +31,5 @@ if __name__ == '__main__':
             data = hickle.load('%s/sz%d.hkl' % (clipDir, i)) # load seizures
         except:
             break
-        plotSz(data, 'Sz%d' % i, 4)
+        plotSz(data, '%s sz%d' % (ptName, i), 4)
         i = i + 1

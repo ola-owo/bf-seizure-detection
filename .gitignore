@@ -8,7 +8,7 @@
 *.csv
 *.zip
 
-clear_data.sh
+clear-data.sh
 
 clips
 annotations/
