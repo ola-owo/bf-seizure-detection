@@ -3,7 +3,7 @@
 Compute metrics on the liveAlgo classifier and plot ROC graph.
 
 Usage:
-python metrics.py keyFile predFile subjNames [...]
+python metrics.py keyFile predFile subjName(s)
 
 Key and prediction files should be CSVs formatted in order, like this:
 
@@ -57,7 +57,7 @@ def metrics(keyFile, predFile, subjNames):
     plt.plot(fp_sz, tp_sz)
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('ROC Curve (Seizure detection)')
+    plt.title('ROC (Seizure detection)')
     plt.show()
 
     auc_early = skl_metrics.roc_auc_score(key[:,1], pred[:,1])
@@ -66,12 +66,15 @@ def metrics(keyFile, predFile, subjNames):
     plt.plot(fp_early, tp_early)
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('ROC Curve (Early seizure detection)')
+    plt.title('ROC (Early seizure detection)')
     plt.show()
 
+    auc_avg = (auc_sz + auc_early) / 2.0
+    print 'Average AUC:', auc_avg
+
     ### Other stats (precision, recall, f1, support)
-    szStats = skl_metrics.classification_report(key[:,0], pred[:,0].astype(int), target_names = ('Interictal', 'Ictal'))
-    earlyszStats = skl_metrics.classification_report(key[:,1], pred[:,1].astype(int), target_names = ('Early sz', 'Non-early sz'))
+    szStats = skl_metrics.classification_report(key[:,0], np.rint(pred[:,0]), target_names = ('Interictal', 'Ictal'))
+    earlyszStats = skl_metrics.classification_report(key[:,1], np.rint(pred[:,1]), target_names = ('Non-early sz', 'Early sz'))
     print '\n============ SEIZURE DETECTION SUMMARY ============='
     print szStats
     print '========== EARLY SEIZURE DETECTION SUMMARY =========='

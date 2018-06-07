@@ -14,7 +14,9 @@ def sliceClips(clipDir, clipType, fs, ptName):
     '''
     Slice a clip of type clipType and frequency fs from patient ptName,
     and save it inside ./seizure-data/
-    clipType should be 'ictal' or 'interictal'
+    
+    Clips should be inside folder clipDir.
+    clipType should be 'ictal' or 'interictal'.
     '''
 
     # Make seizure-data folder if it doesn't already exist
@@ -49,12 +51,14 @@ def sliceClips(clipDir, clipType, fs, ptName):
         sampleCount = sampleCount + c
     print '%d clips converted to %d 1s samples.' % (numClips, sampleCount)
 
-def _clip(clip, fs, channels, ptName, numSamples, sampleNum, ictal):
+def _clip(clip, fs, channels, ptName, numSamples, sampleCount, ictal):
     'Helper function for sliceClips()'
     pos = 0
     skippedForNans = 0
-    for i in range(1, numSamples+1):
-        latency = i - 1
+    if sampleCount == 0: # debug
+        print 'Clip shape:', clip.shape
+    for i in range(numSamples):
+        latency = i
         data = clip[:, pos:pos+fs]
 
         if np.any(data == None):
@@ -74,7 +78,7 @@ def _clip(clip, fs, channels, ptName, numSamples, sampleNum, ictal):
 
         if ictal:
             sio.savemat('seizure-data/{0}/{0}_ictal_segment_{1}.mat'.format(
-                        ptName, (i + sampleNum - skippedForNans)), {
+                        ptName, (i+1 + sampleCount - skippedForNans)), {
                 'data': data,
                 'channels': channels,
                 'freq': fs,
@@ -82,7 +86,7 @@ def _clip(clip, fs, channels, ptName, numSamples, sampleNum, ictal):
             })
         else:
             sio.savemat('seizure-data/{0}/{0}_interictal_segment_{1}.mat'.format(
-                        ptName, (i + sampleNum - skippedForNans)), {
+                        ptName, (i+1 + sampleCount - skippedForNans)), {
                 'data': data,
                 'channels': channels,
                 'freq': fs,
@@ -92,6 +96,7 @@ def _clip(clip, fs, channels, ptName, numSamples, sampleNum, ictal):
     return numSamples - skippedForNans
 
 if __name__ == '__main__':
+    clipDir = sys.argv[1]
     clipType = sys.argv[2]
     fs = sys.argv[3]
     ptName = sys.argv[4]

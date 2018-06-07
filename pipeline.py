@@ -12,6 +12,7 @@ Run classifier.
 
 Usage:
 > python pipeline.py ptName [layerID]
+NOTE: The patient name must be uncommented in list "targets" in liveAlgo/seizure_detection.py
 '''
 
 import os
@@ -27,10 +28,10 @@ from liveAlgo.seizure_detection import run_seizure_detection
 ptName = sys.argv[1]
 #layerID = int(sys.argv[2])
 
-# NOTE: training_data_dir must match "competition-data-dir" in liveAlgo/SETTINGS.json
-annotation_dir = 'annotations'
-clip_dir = 'clips'
-training_data_dir = 'seizure-data'
+# NOTE: ALGO_DATA_ROOT must match "competition-data-dir" in liveAlgo/SETTINGS.json
+ANNOT_ROOT = 'annotations'
+CLIP_ROOT = 'clips'
+ALGO_DATA_ROOT = 'seizure-data'
 
 bf = Blackfynn()
 
@@ -50,34 +51,42 @@ timeseries_ids = {
 ts = bf.get(timeseries_ids[ptName])
 
 ### Pull seizure annotation times
-# makeDir(annotation_dir)
+# makeDir(ANNOT_ROOT)
 # layerName = ts.get_layer(layerID).name
 # print "Pulling annotations from layer '%s'..." % layerName
 # layer = ts.get_layer(layerName)
-# makeAnnotFile(layer, '%s/%s_annotations.txt' % (annotation_dir, ptName))
+# makeAnnotFile(layer, '%s/%s_annotations.txt' % (ANNOT_ROOT, ptName))
 # print 'Done.'
 
 # TODO: Generate interictal_annotations file
 
 ### Pull clips
-makeDir(clip_dir)
+clipDir = CLIP_ROOT + '/' + ptName
+makeDir(clipDir)
 print 'Pulling interictal clips...'
-pullClips('%s/%s_interictal_annotations.txt' % (annotation_dir, ptName),
-          'interictal', ts, clip_dir)
+pullClips('%s/%s_interictal_annotations.txt' % (ANNOT_ROOT, ptName),
+          'interictal', ts, clipDir)
 print 'Pulling ictal clips...'
-pullClips('%s/%s_annotations.txt' % (annotation_dir, ptName),
-          'ictal', ts, clip_dir)
-print 'Done.'
+pullClips('%s/%s_annotations.txt' % (ANNOT_ROOT, ptName),
+          'ictal', ts, clipDir)
+print ''
 
 ### Slice and preprocess clips
-print 'Preparing data for classifier...'
-sliceClips('clips', 'interictal', 250, ptName)
-sliceClips('clips', 'ictal', 250, ptName)
-print 'Done.'
+makeDir(ALGO_DATA_ROOT + '/' + ptName)
+print 'Preparing interictal data for classifier...'
+sliceClips(clipDir, 'interictal', 250, ptName)
+print 'Preparing ictal data for classifier...'
+sliceClips(clipDir, 'ictal', 250, ptName)
+print ''
 
 ### Train classifier
 print 'Training liveAlgo classifier...'
 os.chdir('liveAlgo')
 run_seizure_detection('train_model')
+print 'Done. Classifier is trained and ready to use.'
+
+### Cross-Validate the classifier
+print 'Running cross validation test...'
+run_seizure_detection('cv')
 os.chdir('..')
-print 'Done. Classifier is trained ready to use.'
+print 'Pipeline finished.'

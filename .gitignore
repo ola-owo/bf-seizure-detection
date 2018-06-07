@@ -6,6 +6,10 @@
 *annotations.txt
 *.png
 *.csv
+*.zip
+
+clear_data.sh
+
 clips
 annotations/
 data-cache/

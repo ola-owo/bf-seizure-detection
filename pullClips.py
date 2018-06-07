@@ -47,7 +47,16 @@ def pullClips(annotFile, clipType, ts, outDir):
 
         # pull data for current clip 
         try:
-            df = ts.get_data(start=annotStart, end=annotEnd)
+            if ts.name == 'Ripley': # workaround for Ripley having an empty 5th channel
+                ch = [
+                    'N:channel:95f4fdf5-17bf-492b-87ec-462d31154549',
+                    'N:channel:c126f441-cbfe-4006-a08c-dc36bd309c38',
+                    'N:channel:23d29190-37e4-48b0-885c-cfad77256efe',
+                    'N:channel:07f7bcae-0b6e-4910-a723-8eda7423a5d2'
+                ]
+                df = ts.get_data(start=annotStart, end=annotEnd, channels = ch)
+            else:
+                df = ts.get_data(start=annotStart, end=annotEnd)
         except:
             print 'Pull failed at', annotStart
             continue
