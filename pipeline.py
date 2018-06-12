@@ -19,7 +19,7 @@ import sys
 
 from blackfynn import Blackfynn
 
-from makeAnnots import *
+from annots import *
 from pullClips import pullClips
 from sliceClips import sliceClips
 from testTimeSeries import testTimeSeries
@@ -77,22 +77,22 @@ print ''
 ### Pull clips
 clipDir = CLIP_ROOT + '/' + ptName
 makeDir(clipDir)
-print 'Pulling interictal clips...'
-pullClips('%s/%s_interictal_annotations.txt' % (ANNOT_ROOT, ptName),
-          'interictal', ts, clipDir)
 print 'Pulling ictal clips...'
 pullClips('%s/%s_annotations.txt' % (ANNOT_ROOT, ptName),
           'ictal', ts, clipDir)
+print 'Pulling interictal clips...'
+pullClips('%s/%s_interictal_annotations.txt' % (ANNOT_ROOT, ptName),
+          'interictal', ts, clipDir)
 print ''
 
 
 ### Slice and preprocess clips
 algoDataDir = ALGO_DATA_ROOT + '/' + ptName
 makeDir(algoDataDir)
-print 'Preparing interictal data for classifier...'
-sliceClips(clipDir, 'interictal', 250, ptName)
 print 'Preparing ictal data for classifier...'
 sliceClips(clipDir, 'ictal', 250, ptName, trainingSz = 4)
+print 'Preparing interictal data for classifier...'
+sliceClips(clipDir, 'interictal', 250, ptName)
 print ''
 
 
@@ -118,9 +118,8 @@ print 'Testing on entire time series...'
 
 try:
     # Delete layer if it already exists
-    # DEBUG: don't create/delete any layers yet
     layer = ts.get_layer(PREDICTION_LAYER_NAME)
-    #layer.delete()
+    layer.delete()
 except:
     layer = ts.add_layer(PREDICTION_LAYER_NAME)
 

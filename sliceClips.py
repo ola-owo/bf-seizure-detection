@@ -57,7 +57,7 @@ def sliceClips(clipDir, segType, fs, ptName, trainingSz = -1, skipNans = True):
 
         c = _clip(clip, fs, 4, ptName, clipSegs, segTotal, segType, skipNans)
         segTotal += c
-    print '%d clips converted to %d 1sec segments.' % (numClips, segTotal)
+    print '%d clips converted to %d segments.' % (numClips, segTotal)
 
 def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType, skipNans):
     '''
@@ -77,13 +77,13 @@ def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType, skipNans):
         data = clip[:, pos:pos+fs]
 
         if skipNans:
-            if np.any(data == None):
-                print 'Skipped clip %d (Some/all data is NaN)' % pos
+            if np.any(np.isnan(data)):
+                print 'Skipped segment at position %d (some/all data is NaN)' % pos
                 nanSkips += 1
                 continue
 
             if np.any(np.all((data == 0), axis=1)):
-                print 'Skipped clip %d (Empty channel)' % pos
+                print 'Skipped segment at position %D (empty channel)' % pos
                 nanSkips += 1
                 continue
     

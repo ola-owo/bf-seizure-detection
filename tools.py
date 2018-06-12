@@ -4,6 +4,7 @@ Miscellaneous pipeline functions
 
 import csv
 import os
+import sys
 
 def makeDir(dirName):
     'Make directory dirName. If directory already exists, do nothing.'
@@ -24,3 +25,16 @@ def clearDir(dirName):
         filepath = os.path.join(dirName, filename)
         if os.path.isfile(filepath):
             os.remove(filepath)
+
+class NoPrint:
+    'Suppress print outputs'
+
+    def __enter__(self):
+        self._orig_stdout = sys.stdout
+        self._devnull = open(os.devnull, 'w')
+        sys.stdout = self._devnull
+        # sys.stdout = None
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout = self._orig_stdout
+        self._devnull.close()

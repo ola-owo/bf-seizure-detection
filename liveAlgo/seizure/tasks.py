@@ -231,14 +231,14 @@ def parse_input_data(data_dir, target, data_type, pipeline, gen_ictal=False):
 
     data = process_raw_data(mat_data, with_latency=ictal)
 
-    if len(data) == 3:
+    if len(data) == 3 and ictal: # (ola) modified to not trigger on test data
         X, y, latencies = data
         return {
             'X': X,
             'y': y,
             'latencies': latencies
         }
-    elif len(data) == 2:
+    elif len(data) == 2 and interictal: # (ola) modified to not trigger on test data
         X, y = data
         return {
             'X': X,

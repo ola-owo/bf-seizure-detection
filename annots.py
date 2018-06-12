@@ -13,15 +13,17 @@ def makeAnnotFile(annotations, filename):
     Write annotations to file filename.
     '''
 
-    n = 0
+    if not annotations:
+        print 'makeAnnotFile(): no annotations to write'
+        return
+
     with open(filename, 'wt') as f:
-        if not annotations:
-            print 'makeAnnotFile(): no annotations to write'
-            return
+        n = 0
         for annot in annotations:
             f.write('%d %d\n' % (annot[0], annot[1]))
-            n = n + 1
-        print '%d annotations written to %s.' % (n, filename)
+            n += 1
+
+    print '%d annotations written to %s.' % (n, filename)
 
 def getIctalAnnots(layer):
     '''
@@ -85,7 +87,7 @@ def getInterictalAnnots(ictals, start, end):
     totalIctalTime = reduce(lambda acc, x: acc + (x[1] - x[0]), ictals, 0)
     totalInterTime = 0
     clipLength = 60000000 # length (usec) of each clip to annotate
-    clipInterval = 150000000000L # interval (usec) to grab clips
+    clipInterval = 86400000000L # interval (usec) to grab clips
 
     for inter in interictalsUncut:
         numClips = (inter[1] - inter[0]) / clipInterval
