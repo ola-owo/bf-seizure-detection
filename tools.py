@@ -17,3 +17,10 @@ def savecsv(data, outfile):
     with open(outfile, 'wb') as f:
         w = csv.writer(f)
         w.writerows(data)
+
+def clearDir(dirName):
+    'Delete all files in dirName.'
+    for filename in os.listdir(dirName):
+        filepath = os.path.join(dirName, filename)
+        if os.path.isfile(filepath):
+            os.remove(filepath)

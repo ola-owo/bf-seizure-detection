@@ -80,17 +80,16 @@ def getInterictalAnnots(ictals, start, end):
             interictals.append((newStart, newEnd))
 
     ### Third pass: Convert long annotations into shorter ones
-    totalIctalTime = reduce(lambda acc, x: acc + (x[1] - x[0]), ictals, 0)
-    totalInterTime = 0
     interictalsUncut = interictals
     interictals = []
-    interictalRatio = 10 # ratio of interictal time to ictal time
-    clipLength = 30000000 # length (usec) of each clip to annotate
-    clipInterval = 15000000000000L # interval (usec) to grab clips
+    totalIctalTime = reduce(lambda acc, x: acc + (x[1] - x[0]), ictals, 0)
+    totalInterTime = 0
+    clipLength = 60000000 # length (usec) of each clip to annotate
+    clipInterval = 150000000000L # interval (usec) to grab clips
 
     for inter in interictalsUncut:
         numClips = (inter[1] - inter[0]) / clipInterval
-        pos = 0
+        pos = inter[0]
         while pos + clipInterval < inter[1]:
             interictals.append( (pos, pos + clipLength) )
             pos += clipInterval

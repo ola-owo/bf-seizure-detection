@@ -6,20 +6,21 @@ from makeAnnots import makeAnnotFile
 from pullClips import pullClips
 from sliceClips import sliceClips
 from train import train
+from tools import clearDir
 
-def testTimeSeries(ts, layer, clipLength):
+def testTimeSeries(ts, layer, clipLength, ptName, annotDir, clipDir):
     pos = ts.start
     while pos + clipLength <= ts.end:
+
+        # Download and preprocess clip
         makeAnnotFile([(pos, pos + clipLength)],
-                      '%s/%s_timeseries.txt' % (ANNOT_ROOT, ptName))
-        pullClips('%s/%s_timeseries.txt' % (ANNOT_ROOT, ptName),
+                      '%s/%s_timeseries.txt' % (annotDir, ptName))
+        pullClips('%s/%s_timeseries.txt' % (annotDir, ptName),
                   'timeseries', ts, clipDir)
-        sliceClips(clipDir, 'timeseries', 250, ptName, skipNans=False)
+        sliceClips(clipDir, 'test', 250, ptName, skipNans=False)
 
         # Make predictions
-        os.chdir('liveAlgo')
         train('make_predictions')
-        os.chdir('..')
 
         # load the most recent submission file
         predFile = 'submissions/' + sorted(os.listdir('submissions'))[-1]
@@ -28,8 +29,14 @@ def testTimeSeries(ts, layer, clipLength):
         # If a majority of predictions are positive,
         # annotate clip as a seizure and upload to blackfynn
         if sum(np.round(preds)) > len(preds) / 2:
-        ### DEBUG: print annotations instead of uploading
+        ### DEBUG: print annotations instead of uploading, for now
         #     layer.insert_annotation('Seizure', start = pos, end = pos + clipLength)
             print 'Seizure detected at time (%d, %d)' % pos, pos + clipLength
 
         pos += clipLength
+
+        # Delete clip data
+        clearDir(annotDir)
+        clearDir(clipDir)
+        clearDir('seizure-data')
+        clearDir('data-cache')

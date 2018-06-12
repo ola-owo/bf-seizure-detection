@@ -15,7 +15,6 @@ Usage:
 '''
 
 import json
-import os
 import sys
 
 from blackfynn import Blackfynn
@@ -93,7 +92,7 @@ makeDir(algoDataDir)
 print 'Preparing interictal data for classifier...'
 sliceClips(clipDir, 'interictal', 250, ptName)
 print 'Preparing ictal data for classifier...'
-sliceClips(clipDir, 'ictal', 250, ptName, trainingSz = 3)
+sliceClips(clipDir, 'ictal', 250, ptName, trainingSz = 4)
 print ''
 
 
@@ -119,10 +118,10 @@ print 'Testing on entire time series...'
 
 try:
     # Delete layer if it already exists
+    # DEBUG: don't create/delete any layers yet
     layer = ts.get_layer(PREDICTION_LAYER_NAME)
-    layer.delete()
+    #layer.delete()
 except:
-    pass
+    layer = ts.add_layer(PREDICTION_LAYER_NAME)
 
-layer = ts.get_layer(PREDICTION_LAYER_NAME)
-testTimeSeries(ts, layer, TS_CLIP_LENGTH)
+testTimeSeries(ts, layer, TS_CLIP_LENGTH, ptName, ANNOT_ROOT, clipDir)
