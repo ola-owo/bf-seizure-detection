@@ -1,17 +1,13 @@
+# Files from the original matlab pipeline
 *.mat
 *.m
+
+# Temporary/auto-generated files
 *.swp
 *~
 *.pyc
-*annotations.txt
-*.png
-*.csv
-*.zip
 
-clear-data.sh
-
-clips
-annotations/
+# Used by liveAlgo
+seizure-data/
 data-cache/
 submissions/
-seizure-data/

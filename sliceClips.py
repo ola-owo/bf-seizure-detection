@@ -1,103 +1,128 @@
 #!/usr/bin/env python2
 '''
-Slice annotation clips into 1s segments and save to file.
-This script can be called standalone using
+Slice annotation clips into 1sec segments and save to file.
+
+Standalone usage:
+python sliceClips.py clipDir clipType fs ptName [trainingSz]
 '''
 
+import csv
 import os
 import sys
+
+from tools import makeDir, savecsv
+
 import hickle
 import numpy as np
 import scipy.io as sio
 
-def sliceClips(clipDir, clipType, fs, ptName):
+def sliceClips(clipDir, clipType, fs, ptName, trainingSz = None, skipNans = True):
     '''
     Slice a clip of type clipType and frequency fs from patient ptName,
     and save it inside ./seizure-data/
-    
-    Clips should be inside folder clipDir.
-    clipType should be 'ictal' or 'interictal'.
+
+    trainingSz indicates the number of seizures to use as training data.
+    The rest are used as test data.
+    A value of None means that all clips will be used as training data.
+
+    clipDir: folder containing clips
+    clipType: either 'ictal', 'interictal', or 'timeseries'
+    fs: frequency
+    ptName: patient name
+    trainingSz: number of seizures to use as training data, the rest are used
+        as test data.
+        The default value (-1) means all seizures become training data.
     '''
 
-    # Make seizure-data folder if it doesn't already exist
-    try:
-        os.makedirs('seizure-data')
-    except:
-        pass
-
-    # Validate clip type
+    # Check clip type
     if clipType == 'ictal': 
         clipFilePrefix = 'sz'
-        ictal = True
     elif clipType == 'interictal':
         clipFilePrefix = 'nonsz'
-        ictal = False
+    elif clipType == 'timeseries':
+        clipFilePrefix = 'ts'
     else:
         print 'Unkown clip type "%s" (should be ictal or interictal).'
         return
 
-    # Load and clip seizures
     numClips = 0 # total number of clips
-    sampleCount = 0 # total number of 1s samples across all clips
+    segTotal = 0 # total number of 1sec segments across all clips
+
+    # Load and slice clips
     while True:
+        if trainingSz >= 0 and numClips >= trainingSz:
+            break
+
         try:
             clip = hickle.load('%s/%s%d.hkl' % (clipDir, clipFilePrefix, numClips+1))
-            numClips = numClips + 1
+            numClips += 1
         except:
             break
 
-        numSamples = int(clip.shape[1] / fs) # total number of 1s samples per clip
-        c = _clip(clip, fs, 4, ptName, numSamples, sampleCount, ictal)
-        sampleCount = sampleCount + c
-    print '%d clips converted to %d 1s samples.' % (numClips, sampleCount)
+        numSegments = int(clip.shape[1] / fs) # number of 1sec segments per clip
+        c = _clip(clip, fs, 4, ptName, numSegments, segTotal, clipType, skipNans)
+        segTotal += c
+    print '%d clips converted to %d 1sec segments.' % (numClips, segTotal)
 
-def _clip(clip, fs, channels, ptName, numSamples, sampleCount, ictal):
-    'Helper function for sliceClips()'
+def _clip(clip, fs, channels, ptName, numSegments, segTotal, clipType, skipNans):
+    '''
+    Helper function for sliceClips()
+
+    clip: the clip to be preprocessed
+    clipType: either ictal, interictal, or test
+    fs: recording frequency
+    ptName: patient name
+    numSegments: number of segments to save
+    segTotal: current total number of segments
+    skipNans: whether to skip segments with missing data
+    '''
     pos = 0
-    skippedForNans = 0
-    if sampleCount == 0: # debug
-        print 'Clip shape:', clip.shape
-    for i in range(numSamples):
-        latency = i
+    nanSkips = 0
+    for i in range(numSegments):
         data = clip[:, pos:pos+fs]
 
-        if np.any(data == None):
-            print 'Skipped clip %d (Some/all data is NaN)' % pos
-            skippedForNans = skippedForNans + 1
-            continue
+        if skipNans:
+            if np.any(data == None):
+                print 'Skipped clip %d (Some/all data is NaN)' % pos
+                nanSkips = nanSkips + 1
+                continue
 
-        if np.any(np.all((data == 0), axis=1)):
-            print 'Skipped clip %d (Empty channel)' % pos
-            skippedForNans = skippedForNans + 1
-            continue
+            if np.any(np.all((data == 0), axis=1)):
+                print 'Skipped clip %d (Empty channel)' % pos
+                nanSkips = nanSkips + 1
+                continue
 
-        pos = pos + fs
+        pos += fs
     
         # Mean normalize each channel signal (copied from the old pipeline)
         data = data - np.mean(data, axis=1, keepdims=True)
 
-        if ictal:
-            sio.savemat('seizure-data/{0}/{0}_ictal_segment_{1}.mat'.format(
-                        ptName, (i+1 + sampleCount - skippedForNans)), {
-                'data': data,
-                'channels': channels,
-                'freq': fs,
-                'latency': latency
-            })
-        else:
-            sio.savemat('seizure-data/{0}/{0}_interictal_segment_{1}.mat'.format(
-                        ptName, (i+1 + sampleCount - skippedForNans)), {
-                'data': data,
-                'channels': channels,
-                'freq': fs,
-                'latency': latency
-            })
+        # Save segment
+        matData = {
+            'data': data,
+            'channels': channels,
+            'freq': fs,
+            'latency': latency
+        }
+        if clipType == 'ictal':
+            matData['latency'] = i
 
-    return numSamples - skippedForNans
+        sio.savemat('seizure-data/{0}/{0}_{1}_segment_{2}.mat'.format(
+                    (ptName, clipType, i + 1 + segTotal - nanSkips)), matData)
+
+    return numSegments - nanSkips
 
 if __name__ == '__main__':
     clipDir = sys.argv[1]
     clipType = sys.argv[2]
-    fs = sys.argv[3]
+    fs = int(sys.argv[3])
     ptName = sys.argv[4]
-    sliceClips(clipDir, clipType, fs, ptName)
+
+    try:
+        trainingSz = int(sys.argv[5])
+    except IndexError:
+        trainingSz = -1
+
+    makeDir('seizure-data/' + ptName)
+
+    sliceClips(clipDir, clipType, fs, ptName, trainingSz)

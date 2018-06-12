@@ -21,7 +21,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 import sklearn.metrics as skl_metrics
 
-def metrics(keyFile, predFile, subjNames):
+def printMetrics(keyFile, predFile, subjNames):
     
     ### Read answer key and predictions
     print 'Reading predictions and answer key...'

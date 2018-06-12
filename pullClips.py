@@ -23,6 +23,8 @@ def pullClips(annotFile, clipType, ts, outDir):
         outfile_prefix = 'sz'
     elif clipType == 'interictal':
         outfile_prefix = 'nonsz'
+    elif clipType == 'timeseries':
+        outfile_prefix = 'ts'
     else:
         raise ValueError("Invalid clip type '%s' (should be ictal or interictal)" % clipType)
 
@@ -47,7 +49,7 @@ def pullClips(annotFile, clipType, ts, outDir):
 
         # pull data for current clip 
         try:
-            if ts.name == 'Ripley': # workaround for Ripley having an empty 5th channel
+            if ts.name == 'Ripley': # workaround for Ripley having 5 channels
                 ch = [
                     'N:channel:95f4fdf5-17bf-492b-87ec-462d31154549',
                     'N:channel:c126f441-cbfe-4006-a08c-dc36bd309c38',
@@ -57,6 +59,8 @@ def pullClips(annotFile, clipType, ts, outDir):
                 df = ts.get_data(start=annotStart, end=annotEnd, channels = ch)
             else:
                 df = ts.get_data(start=annotStart, end=annotEnd)
+        except KeyboardInterrupt:
+            raise
         except:
             print 'Pull failed at', annotStart
             continue

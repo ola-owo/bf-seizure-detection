@@ -38,7 +38,8 @@ def run_seizure_detection(build_target):
 
     ts = time.get_millis()
 
-    targets = [
+    ### Load targets from file instead of hard-coding them here
+    # targets = [
         # 'Ripley',
         # 'R950',
 
@@ -46,7 +47,7 @@ def run_seizure_detection(build_target):
         # 'Dog_2',
         # 'Dog_3',
         # 'Dog_4',
-        'Patient_1',
+        # 'Patient_1',
         # 'Patient_2',
         # 'Patient_3',
         # 'Patient_4',
@@ -54,7 +55,11 @@ def run_seizure_detection(build_target):
         # 'Patient_6',
         # 'Patient_7',
         # 'Patient_8'
-    ]
+    # ]
+    with open('targets.json', 'rU') as f:
+        targets = json.load(f)
+        targets = map(str, targets)
+
     pipelines = [
         # NOTE(mike): you can enable multiple pipelines to run them all and compare results
         # Pipeline(gen_ictal=False, pipeline=[FFT(), Slice(1, 48), Magnitude(), Log10()]),
@@ -99,7 +104,7 @@ def run_seizure_detection(build_target):
         # (RandomForestClassifier(n_estimators=3000, min_samples_split=1, bootstrap=False, n_jobs=4, random_state=0), 'rf3000mss1Bfrs0'),
         (RandomForestClassifier(n_estimators=3000, min_samples_split=2, bootstrap=False, n_jobs=4, random_state=0), 'rf3000mss2Bfrs0'),
     ]
-    cv_ratio = 0.5
+    cv_ratio = 0.25
 
     def should_normalize(classifier):
         clazzes = [LogisticRegression]
