@@ -102,7 +102,6 @@ def _clip(clip, fs, channels, ptName, numSegments, segTotal, clipType, skipNans)
             'data': data,
             'channels': channels,
             'freq': fs,
-            'latency': latency
         }
         if clipType == 'ictal':
             matData['latency'] = i
