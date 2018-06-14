@@ -3,9 +3,6 @@
 Use this to pull seizure data from Blackfynn for the pipeline.
 Can be called standalone as:
 > python pullClips.py annotFile clipType tsID outDir
-
-NOTE: When training the classifier, the patient name should be listed
-in "targets" inside liveAlgo/seizure_detection.py
 """
 
 import sys
@@ -38,9 +35,9 @@ def pullClips(annotFile, clipType, ts, outDir):
 
     # save each clip to file
     num_saved = 0
-    for i in range(len(annots)):
+    for annotStr in annots:
         # get clip start/end times
-        annot = map(int, annots[i].split())
+        annot = map(int, annotStr.split())
         if not annot:
             # ignore empty lines in file
             continue
@@ -56,25 +53,26 @@ def pullClips(annotFile, clipType, ts, outDir):
                     'N:channel:23d29190-37e4-48b0-885c-cfad77256efe',
                     'N:channel:07f7bcae-0b6e-4910-a723-8eda7423a5d2'
                 ]
-                df = ts.get_data(start=annotStart, end=annotEnd, channels = ch)
+                df = ts.get_data(start=annotStart, end=annotEnd, channels=ch)
             else:
                 df = ts.get_data(start=annotStart, end=annotEnd)
         except KeyboardInterrupt:
             raise
-        except:
+        except Exception as e:
             print 'Pull failed at', annotStart
+            print e
             continue
 
         array = df.transpose().values
-        outfile = '%s/%s%d.hkl' % (outDir, outfile_prefix, i+1)
+        outfile = '%s/%s%d.hkl' % (outDir, outfile_prefix, num_saved+1)
         hickle.dump(array, outfile)
-        num_saved = num_saved + 1
+        num_saved += 1
 
     print('%d clips saved.' % num_saved)
 
 if __name__ == '__main__':
     annotFile = sys.argv[1]
-    clipType = sys.argv[2] # either ictal or interictal
+    clipType = sys.argv[2]
     tsID = sys.argv[3]
     outDir = sys.argv[4].rstrip('/')
 

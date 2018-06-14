@@ -19,6 +19,7 @@ import scipy.io as sio
 def sliceClips(clipDir, segType, fs, ptName, trainingSz = -1, skipNans = True):
     '''
     Slice a clip from patient ptName and save it inside ./seizure-data/
+    Returns: The number of segments successfully saved
 
     clipDir: folder containing clips
     segType: type of segment to save; either 'ictal', 'interictal', or 'test'
@@ -57,7 +58,9 @@ def sliceClips(clipDir, segType, fs, ptName, trainingSz = -1, skipNans = True):
 
         c = _clip(clip, fs, 4, ptName, clipSegs, segTotal, segType, skipNans)
         segTotal += c
+
     print '%d clips converted to %d segments.' % (numClips, segTotal)
+    return segTotal
 
 def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType, skipNans):
     '''
@@ -108,16 +111,18 @@ def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType, skipNans):
     return clipSegs - nanSkips
 
 if __name__ == '__main__':
-    clipDir = sys.argv[1]
-    segType = sys.argv[2]
-    fs = int(sys.argv[3])
-    ptName = sys.argv[4]
+    clipRoot = sys.argv[1]
+    ptName = sys.argv[2]
+    segType = sys.argv[3]
+    fs = int(sys.argv[4])
 
     try:
         trainingSz = int(sys.argv[5])
     except IndexError:
         trainingSz = -1
 
+    clipDir = os.path.join(clipRoot, ptName)
+    makeDir(clipDir)
     makeDir('seizure-data/' + ptName)
 
     sliceClips(clipDir, segType, fs, ptName, trainingSz)

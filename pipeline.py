@@ -32,7 +32,6 @@ from tools import *
 ANNOT_ROOT = 'annotations'
 CLIP_ROOT = 'clips'
 ALGO_DATA_ROOT = 'seizure-data'
-TS_CLIP_LENGTH = 15000000 # length (usec) of each clip when testing on the entire timeseries
 PREDICTION_LAYER_NAME = 'UPenn_Seizure_Detections'
 
 ptName = sys.argv[1]
@@ -121,6 +120,8 @@ try:
     layer = ts.get_layer(PREDICTION_LAYER_NAME)
     layer.delete()
 except:
-    layer = ts.add_layer(PREDICTION_LAYER_NAME)
+    pass
 
+layer = None # DEBUG
+#layer = ts.add_layer(PREDICTION_LAYER_NAME)
 testTimeSeries(ts, layer, TS_CLIP_LENGTH, ptName, ANNOT_ROOT, clipDir)

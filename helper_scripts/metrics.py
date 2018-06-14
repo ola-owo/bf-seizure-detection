@@ -84,4 +84,4 @@ if __name__ == '__main__':
     keyFile = sys.argv[1]
     predFile = sys.argv[2]
     subjNames = sys.argv[3:]
-    metrics(keyFile, predFile, subjNames)
+    printMetrics(keyFile, predFile, subjNames)

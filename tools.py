@@ -30,11 +30,10 @@ class NoPrint:
     'Suppress print outputs'
 
     def __enter__(self):
-        self._orig_stdout = sys.stdout
+        self._stdout = sys.stdout
         self._devnull = open(os.devnull, 'w')
         sys.stdout = self._devnull
-        # sys.stdout = None
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout = self._orig_stdout
+        sys.stdout = self._stdout
         self._devnull.close()

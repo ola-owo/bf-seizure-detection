@@ -87,7 +87,7 @@ def getInterictalAnnots(ictals, start, end):
     totalIctalTime = reduce(lambda acc, x: acc + (x[1] - x[0]), ictals, 0)
     totalInterTime = 0
     clipLength = 60000000 # length (usec) of each clip to annotate
-    clipInterval = 86400000000L # interval (usec) to grab clips
+    clipInterval = 10800000000L # interval (usec) to grab clips
 
     for inter in interictalsUncut:
         numClips = (inter[1] - inter[0]) / clipInterval
@@ -102,13 +102,13 @@ def getInterictalAnnots(ictals, start, end):
 if __name__ == '__main__':
     ptName = sys.argv[1]
     tsID = sys.argv[2]
-    layerName = sys.argv[3]
+    layerID = int(sys.argv[3])
 
     bf = Blackfynn()
     ts = bf.get(tsID)
     start = int(ts.start)
     end = int(ts.end)
-    layer = ts.get_layer(layerName)
+    layer = ts.get_layer(layerID)
     
     ictals = getIctalAnnots(layer)
     interictals = getInterictalAnnots(ictals, start, end)
