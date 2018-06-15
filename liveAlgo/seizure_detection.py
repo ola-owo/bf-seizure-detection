@@ -17,12 +17,14 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
-def run_seizure_detection(build_target):
+def run_seizure_detection(build_target, target=None):
     """
     The main entry point for running seizure-detection cross-validation and predictions.
     Directories from settings file are configured, classifiers are chosen, pipelines are
     chosen, and the chosen build_target ('cv', 'predict', 'train_model') is run across
     all combinations of (targets, pipelines, classifiers)
+
+    (ola): a single target can optionally be specified
     """
 
     with open('SETTINGS.json') as f:
@@ -56,9 +58,12 @@ def run_seizure_detection(build_target):
         # 'Patient_7',
         # 'Patient_8'
     # ]
-    with open('targets.json', 'rU') as f:
-        targets = json.load(f)
-        targets = map(str, targets)
+    if target:
+        targets = [target]
+    else:
+        with open('targets.json', 'rU') as f:
+            targets = json.load(f)
+            targets = map(str, targets)
 
     pipelines = [
         # NOTE(mike): you can enable multiple pipelines to run them all and compare results
@@ -132,7 +137,9 @@ def run_seizure_detection(build_target):
                         classifier_filenames.append(task.filename())
 
                 if make_predictions:
-                    filename = 'submission%d-%s_%s.csv' % (ts, classifier_name, pipeline.get_name())
+                    #filename = 'submission%d-%s_%s.csv' % (ts, classifier_name, pipeline.get_name())
+                    # (ola): changed submission filename so it contains the target name(s)
+                    filename = 'submission%d-%s-%s_%s.csv' % (ts, '_'.join(targets), classifier_name, pipeline.get_name())
                     filename = os.path.join(submission_dir, filename)
                     with open(filename, 'w') as f:
                         print >> f, '\n'.join(guesses)

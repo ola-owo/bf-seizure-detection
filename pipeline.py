@@ -124,4 +124,4 @@ except:
 
 layer = None # DEBUG
 #layer = ts.add_layer(PREDICTION_LAYER_NAME)
-testTimeSeries(ts, layer, TS_CLIP_LENGTH, ptName, ANNOT_ROOT, clipDir)
+testTimeSeries(ts, layer, ptName, ANNOT_ROOT, clipDir)

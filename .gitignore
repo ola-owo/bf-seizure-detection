@@ -5,7 +5,7 @@
 # Temporary/auto-generated files
 *.swp
 *~
-*.pyc
+*.py[cdo]
 
 # Used by liveAlgo
 seizure-data/

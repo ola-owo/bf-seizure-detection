@@ -4,11 +4,15 @@ import os
 import sys
 from liveAlgo.seizure_detection import run_seizure_detection
 
-def train(action):
+def train(action, target=None):
     os.chdir('liveAlgo')
-    run_seizure_detection(action)
+    run_seizure_detection(action, target)
     os.chdir('..')
 
 if __name__ == '__main__':
     action = sys.argv[1]
-    train(action)
+    try:
+        target = sys.argv[2]
+    except IndexError:
+        target = None
+    train(action, target)
