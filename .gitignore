@@ -11,3 +11,7 @@
 seizure-data/
 data-cache/
 submissions/
+
+# Other files for my project
+tests/
+blackfynnPipeline.zip

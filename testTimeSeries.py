@@ -14,9 +14,9 @@ from sliceClips import sliceClips
 from train import train
 from tools import clearDir, NoPrint
 
-CLIP_LENGTH = 15000000 # length (usec) of each clip when testing on the entire timeseries
+CLIP_LENGTH = 15000000 # length (usec) of each clip to test
 
-def testTimeSeries(ts, layer, ptName, annotDir, clipDir):
+def testTimeSeries(ts, layer, ptName, annotDir, clipDir, logging=True, annotating=False):
     '''
     Test liveAlgo classifier on an entire timeseries.
     Detected seizures are written to the given annotation layer.
@@ -26,64 +26,62 @@ def testTimeSeries(ts, layer, ptName, annotDir, clipDir):
     ptName: Subject name
     annotDir: Annotation folder
     clipDir: Location of the current subject's seizure/nonseizure clips
+    logging: Whether to log results to file
+    annotating: Whether to upload annotations to Blackfynn
     '''
 
-    # Make sure log file exists and is empty
-    logfile = ptName + '_seizures.txt'
-    open(logfile, 'w').close()
+    if logging:
+        # Make sure log file exists and is empty
+        logfile = ptName + '_seizures.txt'
+        open(logfile, 'w').close()
     
-    pos = ts.start
-    if ptName=='UCD2': pos = 1527560255414440 # DEBUG: skipping to 1st seizure to avoid deadspace
-    while pos + CLIP_LENGTH <= ts.end:
+    timePeriods = ts.segments()
+    for timePd in timePeriods:
+        pos = timePd[0]
+        while pos + CLIP_LENGTH < timePd[1]:
+            print 'Testing position (%d, %d)' % (pos, pos + CLIP_LENGTH)
 
+            with NoPrint(): # suppress console output
+                makeAnnotFile([(pos, pos + CLIP_LENGTH)],
+                              '%s/%s_timeseries.txt' % (annotDir, ptName))
+                pullClips('%s/%s_timeseries.txt' % (annotDir, ptName),
+                          'timeseries', ts, clipDir)
+                segs = sliceClips(clipDir, 'test', 250, ptName, skipNans=True)
 
-        print 'Testing position (%d, %d)' % (pos, pos + CLIP_LENGTH)
+                if segs: 
+                    train('make_predictions', target=ptName)
+                    submissions = filter(lambda f: ptName in f, os.listdir('submissions'))
+                    submissions.sort()
+                    predFile = os.path.join('submissions', submissions[-1])
+                    preds = np.loadtxt(predFile, delimiter=',', skiprows=1, usecols=1)
+                else:
+                    # Predict negative if no segments were created
+                    preds = [0]
 
-        with NoPrint(): # suppress console output
-            # Download and preprocess the current clip
-            makeAnnotFile([(pos, pos + CLIP_LENGTH)],
-                          '%s/%s_timeseries.txt' % (annotDir, ptName))
-            pullClips('%s/%s_timeseries.txt' % (annotDir, ptName),
-                      'timeseries', ts, clipDir)
-            segs = sliceClips(clipDir, 'test', 250, ptName, skipNans=True)
+            # If a majority of predictions are positive, then:
+            # (if annotating) mark clip as a seizure and upload annonation to blackfynn, and
+            # (if logging) write positive prediction to file
+            if sum(np.round(preds)) > len(preds) / 2:
+                if annotating:
+                    layer.insert_annotation('Seizure', start = pos, end = pos + CLIP_LENGTH)
+                msg = '[+] (%d, %d)\n' % (pos, pos + CLIP_LENGTH)
 
-            if segs: # don't run classifier if no segments were created
-                train('make_predictions', target=ptName)
+            else:
+                msg = '[-] (%d, %d)\n' % (pos, pos + CLIP_LENGTH)
 
-        if segs:
-            # load the submission file
-            submissions = filter(lambda f: ptName in f, os.listdir('submissions'))
-            submissions.sort()
-            predFile = os.path.join('submissions', submissions[-1])
-            preds = np.loadtxt(predFile, delimiter=',', skiprows=1, usecols=1)
-        else:
-            # Predict negative if no segments were created
-            preds = [0]
+            if logging:
+                with open(logfile, 'a') as f: f.write(msg)
 
-        # If a majority of predictions are positive,
-        # mark clip as a seizure and upload annonation to blackfynn
-        #
-        #if sum(np.round(preds)) > len(preds) / 2:
-        #    layer.insert_annotation('Seizure', start = pos, end = pos + CLIP_LENGTH)
+            pos += CLIP_LENGTH
 
-        ### DEBUG: Output results to file
-        if sum(np.round(preds)) > len(preds) / 2:
-            msg = '[+] (%d, %d)\n' % (pos, pos + CLIP_LENGTH)
-        else:
-            msg = '[-] (%d, %d)\n' % (pos, pos + CLIP_LENGTH)
-        with open(logfile, 'a') as f:
-            f.write(msg)
-
-        pos += CLIP_LENGTH
-
-        # Delete temporary clip data
-        os.remove('%s/%s_timeseries.txt' % (annotDir, ptName))
-        try:
-            os.remove(predFile)
-        except:
-            pass
-        clearDir(clipDir)
-        clearDir(os.path.join('seizure-data', ptName))
+            # Delete temporary clip data
+            os.remove('%s/%s_timeseries.txt' % (annotDir, ptName))
+            try:
+                os.remove(predFile)
+            except:
+                pass
+            clearDir(clipDir)
+            clearDir(os.path.join('seizure-data', ptName))
 
 if __name__ == '__main__':
     bf = Blackfynn()
@@ -94,9 +92,18 @@ if __name__ == '__main__':
     annotDir = sys.argv[4].rstrip('/')
     clipDir = sys.argv[5].rstrip('/')
 
+    try:
+        kwargs = sys.argv[6:]
+        logging = ('logging' in kwargs)
+        annotating = ('annotating' in kwargs)
+    except IndexError:
+        logging = True
+        annotating = False
+
     ts = bf.get(tsID)
     try:
         layer = ts.get_layer(int(layerID))
     except ValueError:
         layer = None
-    testTimeSeries(ts, layer, ptName, annotDir, clipDir)
+
+    testTimeSeries(ts, layer, ptName, annotDir, clipDir, logging, annotating)

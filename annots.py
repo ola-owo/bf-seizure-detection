@@ -34,70 +34,52 @@ def getIctalAnnots(layer):
     anns = map(lambda x: (x.start, x.end), layer.annotations())
     return anns
 
-def getInterictalAnnots(ictals, start, end):
+def getInterictalAnnots(ictals, segments):
     '''
-    Takes a tuple list ictals and a start and end time and generates
-    interictal annotations (may contain spaces of empty data)
-    '''
+    Takes a list of ictal annotations and generates interictal annotations.
 
-    total_span = (start, end)
-    interictals = [total_span]
-    TIME_BUFFER = 14400000000 # 4h converted to microseconds
+    ictals: list of ictal annotations
+    segments: list of all (non-empty) periods within the timeseries
+    '''
+    TIME_BUFFER = 14400000000 # time (usec) to exclude before and after each seizure
+    DATA_RATIO = 10 # ratio of interictal to ictal time
+
+    interictals = segments
+    start = segments[0][0]
+    end = segments[-1][1]
 
     ### First pass: Remove each ictal period from interictals
     for ictal in ictals:
-        if ictal[0] >= ictal[1]:
-            print 'Malformed annotation (%d,%d). Skipping...' % \
-                  (ictal[0], ictal[1])
-            continue
+        # Delete the seizure + time buffer from interictals
+        trimStart = max(start, ictal[0] - TIME_BUFFER)
+        trimEnd = min(end, ictal[1] + TIME_BUFFER)
 
-        inter = () # interictal annotation to be clipped
         for i in range(len(interictals)):
-            if interictals[i][0] < ictal[0] and \
-            interictals[i][1] > ictal[1]:
-                # inter should entirely contain ictal annot
-                inter = interictals.pop(i)
-                break
-        if not inter:
-            # Indicates malformed annotation (start >= end)
-            # or overlap with a previous seizure annotation
-            raise ValueError('Invalid ictal annotation (%d, %d)' % \
-                                     (ictal[0], ictal[1]))
+            if interictals[i][1] > trimStart: break
 
-        # Remove seizure period from interictal
-        newAnn1 = (inter[0], ictal[0])
-        newAnn2 = (ictal[1], inter[1])
-        interictals.insert(i, newAnn1)
-        interictals.insert(i+1, newAnn2)
+        for j in range(i+1, len(interictals)):
+            if interictals[j][1] > trimEnd: break
 
-    ### Second pass: Enforce TIME_BUFFER constraint
+        newAnnot = (interictals[i][0], trimStart)
+        interictals[i] = newAnnot
+
+        newAnnot = (trimEnd, interictals[j][1])
+        interictals[j] = newAnnot
+
+        interictals[i+1 : j] = []
+
+    ### Second pass: Use only enough interictal clips to satisfy DATA_RATIO
     interictalsCopy = interictals
     interictals = []
-    for inter in interictalsCopy:
-        newStart = inter[0] + TIME_BUFFER
-        newEnd = inter[1] - TIME_BUFFER
-
-        # Only include valid interictal clips (where start < end)
-        if newStart < newEnd:
-            interictals.append((newStart, newEnd))
-
-    ### Third pass: Convert long annotations into shorter ones
-    interictalsUncut = interictals
-    interictals = []
-    totalIctalTime = reduce(lambda acc, x: acc + (x[1] - x[0]), ictals, 0)
     totalInterTime = 0
-    clipLength = 60000000 # length (usec) of each clip to annotate
-    clipInterval = 10800000000L # interval (usec) to grab clips
+    totalIctalTime = reduce(lambda acc, (a,b): b - a + acc, ictals, 0)
 
-    for inter in interictalsUncut:
-        numClips = (inter[1] - inter[0]) / clipInterval
-        pos = inter[0]
-        while pos + clipInterval < inter[1]:
-            interictals.append( (pos, pos + clipLength) )
-            pos += clipInterval
+    for inter in interictalsCopy:
+        interictals.append(inter)
+        totalInterTime += (inter[1] - inter[0])
+        if totalInterTime / totalIctalTime >= DATA_RATIO: break
 
     return interictals
-
 
 if __name__ == '__main__':
     ptName = sys.argv[1]
@@ -106,11 +88,10 @@ if __name__ == '__main__':
 
     bf = Blackfynn()
     ts = bf.get(tsID)
-    start = int(ts.start)
-    end = int(ts.end)
+    segs = ts.segments()
     layer = ts.get_layer(layerID)
     
     ictals = getIctalAnnots(layer)
-    interictals = getInterictalAnnots(ictals, start, end)
+    interictals = getInterictalAnnots(ictals, segs) 
     makeAnnotFile(ictals, 'annotations/%s_annotations.txt' % ptName)
     makeAnnotFile(interictals, 'annotations/%s_interictal_annotations.txt' % ptName)

@@ -47,6 +47,7 @@ timeseries_ids = {
     'UCD2': 'N:package:86985e61-c940-4404-afa7-94d0add8333f',
 }
 ts = bf.get(timeseries_ids[ptName])
+segments = ts.segments()
 
 
 ### Get annotation layer containing the seizures to train from
@@ -59,7 +60,6 @@ layer_ids = {
 layer = ts.get_layer(layer_ids[ptName])
 layerName = layer.name
 
-
 ### Pull ictal and interictal annotation times
 print "Pulling annotations from layer '%s'..." % layerName
 makeDir(ANNOT_ROOT)
@@ -67,7 +67,7 @@ ictals = getIctalAnnots(layer)
 makeAnnotFile(ictals, '%s/%s_annotations.txt' % (ANNOT_ROOT, ptName))
 
 print 'Generating interictal annotations...'
-interictals = getInterictalAnnots(ictals, int(ts.start), int(ts.end))
+interictals = getInterictalAnnots(ictals, segments)
 makeAnnotFile(interictals, '%s/%s_interictal_annotations.txt' % \
                            (ANNOT_ROOT, ptName))
 print ''
@@ -102,13 +102,13 @@ with open('liveAlgo/targets.json', 'w') as f:
 
 ### Train classifier
 print 'Training classifier...'
-train('train_model')
+train('train_model', target=ptName)
 print ''
 
 
 ### Compute cross-Validation scores
 print 'Computing cross-validation scores...'
-train('cv')
+train('cv', target=ptName)
 print ''
 
 
