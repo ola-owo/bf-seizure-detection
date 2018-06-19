@@ -35,7 +35,6 @@ ALGO_DATA_ROOT = 'seizure-data'
 PREDICTION_LAYER_NAME = 'UPenn_Seizure_Detections'
 
 ptName = sys.argv[1]
-#layerID = int(sys.argv[2])
 bf = Blackfynn()
 
 
@@ -115,13 +114,14 @@ print ''
 ### Make predictions on entire timeseries
 print 'Testing on entire time series...'
 
+### DEBUG: comment out this block when not uploading annotatins to blackfynn
 try:
     # Delete layer if it already exists
     layer = ts.get_layer(PREDICTION_LAYER_NAME)
     layer.delete()
+    layer = ts.add_layer(PREDICTION_LAYER_NAME)
 except:
-    pass
+    layer = ts.add_layer(PREDICTION_LAYER_NAME)
 
-layer = None # DEBUG
-#layer = ts.add_layer(PREDICTION_LAYER_NAME)
-testTimeSeries(ts, layer, ptName, ANNOT_ROOT, clipDir)
+testTimeSeries(ts, layer, ptName, ANNOT_ROOT, clipDir, annotating=True)
+#testTimeSeries(ts, None, ptName, ANNOT_ROOT, clipDir, annotating=False) # DEBUG

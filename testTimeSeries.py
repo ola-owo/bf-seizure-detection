@@ -37,8 +37,12 @@ def testTimeSeries(ts, layer, ptName, annotDir, clipDir, logging=True, annotatin
     
     timePeriods = ts.segments()
     for timePd in timePeriods:
+        szStarted = False
+        szStart = 0
+        szEnd = 0
+
         pos = timePd[0]
-        while pos + CLIP_LENGTH < timePd[1]:
+        while pos + CLIP_LENGTH <= timePd[1]:
             print 'Testing position (%d, %d)' % (pos, pos + CLIP_LENGTH)
 
             with NoPrint(): # suppress console output
@@ -54,34 +58,54 @@ def testTimeSeries(ts, layer, ptName, annotDir, clipDir, logging=True, annotatin
                     submissions.sort()
                     predFile = os.path.join('submissions', submissions[-1])
                     preds = np.loadtxt(predFile, delimiter=',', skiprows=1, usecols=1)
+                    if preds.shape == (): 
+                        # if preds has only one element, convert it from 0-D to 1-D
+                        preds = preds.reshape((1,))
                 else:
                     # Predict negative if no segments were created
-                    preds = [0]
+                    preds = [0.0]
 
+            ###
             # If a majority of predictions are positive, then:
             # (if annotating) mark clip as a seizure and upload annonation to blackfynn, and
             # (if logging) write positive prediction to file
             if sum(np.round(preds)) > len(preds) / 2:
-                if annotating:
-                    layer.insert_annotation('Seizure', start = pos, end = pos + CLIP_LENGTH)
-                msg = '[+] (%d, %d)\n' % (pos, pos + CLIP_LENGTH)
+                msg = '+ (%d, %d) %f\n' % (pos, pos + CLIP_LENGTH, np.mean(preds))
+                if not szStarted:
+                    szStarted = True
+                    szStart = pos
 
             else:
-                msg = '[-] (%d, %d)\n' % (pos, pos + CLIP_LENGTH)
+                msg = '- (%d, %d) %f\n' % (pos, pos + CLIP_LENGTH, np.mean(preds))
+                if szStarted:
+                    szStarted = False
+                    szEnd = pos
+                    if annotating:
+                        layer.insert_annotation('Seizure',
+                                                start = szStart, end = szEnd)
 
             if logging:
                 with open(logfile, 'a') as f: f.write(msg)
 
             pos += CLIP_LENGTH
 
-            # Delete temporary clip data
-            os.remove('%s/%s_timeseries.txt' % (annotDir, ptName))
+            ### Delete temporary clip data
+            # Annotation:
+            os.remove(os.path.join(annotDir, ptName + '_timeseries.txt'))
+            # Submission file:
             try:
                 os.remove(predFile)
             except:
                 pass
+            # Timeseries clip:
             clearDir(clipDir)
+            # Test segments:
             clearDir(os.path.join('seizure-data', ptName))
+            # Cached classifier data
+            for fname in os.listdir('data-cache'):
+                if (fname.startswith('data_test_' + ptName) or
+                    fname.startswith('predictions_' + ptName)):
+                    os.remove(os.path.join('data-cache', fname))
 
 if __name__ == '__main__':
     bf = Blackfynn()

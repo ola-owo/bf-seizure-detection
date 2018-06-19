@@ -50,22 +50,24 @@ def getInterictalAnnots(ictals, segments):
 
     ### First pass: Remove each ictal period from interictals
     for ictal in ictals:
-        # Delete the seizure + time buffer from interictals
+        # Get the seizure start/end points
         trimStart = max(start, ictal[0] - TIME_BUFFER)
         trimEnd = min(end, ictal[1] + TIME_BUFFER)
 
+        # Find all the interictal periods between trimStart and trimEnd
         for i in range(len(interictals)):
             if interictals[i][1] > trimStart: break
 
         for j in range(i+1, len(interictals)):
             if interictals[j][1] > trimEnd: break
 
+        # Trim the interictals periods containing trimStart and trimEnd
         newAnnot = (interictals[i][0], trimStart)
         interictals[i] = newAnnot
-
         newAnnot = (trimEnd, interictals[j][1])
         interictals[j] = newAnnot
 
+        # Remove interictal periods between trimStart and trimEnd
         interictals[i+1 : j] = []
 
     ### Second pass: Use only enough interictal clips to satisfy DATA_RATIO
