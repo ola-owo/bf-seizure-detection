@@ -1,6 +1,7 @@
+#!/usr/bin/env python2
 '''
 Standalone usage:
-python testTimeSeries.py tsID layerID ptName annotDir clipDir
+python testTimeSeries.py tsID layerID ptName annotDir clipDir [[log] [annotate]]
 '''
 import os
 import sys
@@ -16,7 +17,7 @@ from tools import clearDir, NoPrint
 
 CLIP_LENGTH = 15000000 # length (usec) of each clip to test
 
-def testTimeSeries(ts, layer, ptName, annotDir, clipDir, logging=True, annotating=False):
+def testTimeSeries(ts, layer, ptName, annotDir, clipDir, startTime=None, endTime=None, logging=True, annotating=True):
     '''
     Test liveAlgo classifier on an entire timeseries.
     Detected seizures are written to the given annotation layer.
@@ -31,18 +32,35 @@ def testTimeSeries(ts, layer, ptName, annotDir, clipDir, logging=True, annotatin
     '''
 
     if logging:
-        # Make sure log file exists and is empty
+        # Make sure log file exists
         logfile = ptName + '_seizures.txt'
-        open(logfile, 'w').close()
-    
-    timePeriods = ts.segments()
-    for timePd in timePeriods:
+
+    timeSegments = ts.segments()
+    if startTime:
+        # Get the idx of the time segment to start at, and exclude all time before it
+        i = next(i for i, (a,b) in enumerate(timeSegments) if b > startTime)
+        timeSegments[:i] = []
+        startTime = max(startTime, timeSegments[0][0])
+        timeSegments[0] = (startTime, timeSegments[0][1])
+    else:
+        startTime = timeSegments[0][0]
+    if endTime:
+        # Same thing as with startTime
+        l = len(timeSegments)
+        i = next(l - i for i, (a,b) in enumerate(reversed(timeSegments)) if a < endTime)
+        timeSegments[i+1:] = []
+        endTime = min(endTime, timeSegments[-1][1])
+        timeSegments[-1] = (timeSegments[-1][0], endTime)
+    else:
+        endTime = timeSegments[-1][1]
+
+    for timeSeg in timeSegments:
         szStarted = False
         szStart = 0
         szEnd = 0
 
-        pos = timePd[0]
-        while pos + CLIP_LENGTH <= timePd[1]:
+        pos = startTime
+        while pos < timeSeg[1]:
             print 'Testing position (%d, %d)' % (pos, pos + CLIP_LENGTH)
 
             with NoPrint(): # suppress console output
@@ -63,20 +81,22 @@ def testTimeSeries(ts, layer, ptName, annotDir, clipDir, logging=True, annotatin
                         preds = preds.reshape((1,))
                 else:
                     # Predict negative if no segments were created
-                    preds = [0.0]
+                    preds = np.array([0.0])
 
             ###
             # If a majority of predictions are positive, then:
             # (if annotating) mark clip as a seizure and upload annonation to blackfynn, and
             # (if logging) write positive prediction to file
-            if sum(np.round(preds)) > len(preds) / 2:
-                msg = '+ (%d, %d) %f\n' % (pos, pos + CLIP_LENGTH, np.mean(preds))
+            preds = preds.astype(float)
+            meanScore = np.mean(preds)
+            if meanScore > 0.5:
+                msg = '+ (%d, %d) %f\n' % (pos, pos + CLIP_LENGTH, meanScore)
                 if not szStarted:
                     szStarted = True
                     szStart = pos
 
             else:
-                msg = '- (%d, %d) %f\n' % (pos, pos + CLIP_LENGTH, np.mean(preds))
+                msg = '- (%d, %d) %f\n' % (pos, pos + CLIP_LENGTH, meanScore)
                 if szStarted:
                     szStarted = False
                     szEnd = pos
@@ -118,8 +138,8 @@ if __name__ == '__main__':
 
     try:
         kwargs = sys.argv[6:]
-        logging = ('logging' in kwargs)
-        annotating = ('annotating' in kwargs)
+        logging = ('log' in kwargs)
+        annotating = ('annotate' in kwargs)
     except IndexError:
         logging = True
         annotating = False

@@ -40,24 +40,6 @@ def run_seizure_detection(build_target, target=None):
 
     ts = time.get_millis()
 
-    ### Load targets from file instead of hard-coding them here
-    # targets = [
-        # 'Ripley',
-        # 'R950',
-
-        # 'Dog_1',
-        # 'Dog_2',
-        # 'Dog_3',
-        # 'Dog_4',
-        # 'Patient_1',
-        # 'Patient_2',
-        # 'Patient_3',
-        # 'Patient_4',
-        # 'Patient_5',
-        # 'Patient_6',
-        # 'Patient_7',
-        # 'Patient_8'
-    # ]
     if target:
         targets = [target]
     else:

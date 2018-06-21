@@ -11,7 +11,8 @@ ictal and interictal clips -> preproccess clips for the classifier ->
 Run classifier.
 
 Usage:
-> python pipeline.py ptName [layerID]
+> python pipeline.py ptName [startTime [endTime]]
+Use 'start' in place of startTime to go from the beginning until endTime
 '''
 
 import json
@@ -35,6 +36,23 @@ ALGO_DATA_ROOT = 'seizure-data'
 PREDICTION_LAYER_NAME = 'UPenn_Seizure_Detections'
 
 ptName = sys.argv[1]
+
+try:
+    kwargs = sys.argv[2:]
+    if kwargs[0] == 'start':
+        startTime = None
+    else:
+        startTime = int(kwargs[0])
+
+    if len(kwargs) >= 2:
+        endTime = int(kwargs[1])
+    else:
+        endTime = None
+except:
+    startTime = None
+    endTime = None
+
+
 bf = Blackfynn()
 
 
@@ -53,7 +71,7 @@ segments = ts.segments()
 layer_ids = {
     'Old_Ripley': 16,
     'R950': 143,
-    'Ripley': 10,
+    'Ripley': 1088,
     'UCD2': 450,
 }
 layer = ts.get_layer(layer_ids[ptName])
@@ -114,7 +132,7 @@ print ''
 ### Make predictions on entire timeseries
 print 'Testing on entire time series...'
 
-### DEBUG: comment out this block when not uploading annotatins to blackfynn
+### DEBUG: comment out this block when not annotating on blackfynn
 try:
     # Delete layer if it already exists
     layer = ts.get_layer(PREDICTION_LAYER_NAME)
@@ -123,5 +141,5 @@ try:
 except:
     layer = ts.add_layer(PREDICTION_LAYER_NAME)
 
-testTimeSeries(ts, layer, ptName, ANNOT_ROOT, clipDir, annotating=True)
-#testTimeSeries(ts, None, ptName, ANNOT_ROOT, clipDir, annotating=False) # DEBUG
+testTimeSeries(ts, layer, ptName, ANNOT_ROOT, clipDir, startTime, endTime)
+# testTimeSeries(ts, None, ptName, ANNOT_ROOT, clipDir, startTime, endTIme, annotating=False) # DEBUG

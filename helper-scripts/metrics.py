@@ -58,6 +58,7 @@ def printMetrics(keyFile, predFile, subjNames):
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.title('ROC (Seizure detection)')
+    plt.savefig('roc-%s-sz.png' % '_'.join(subjNames))
     plt.show()
 
     auc_early = skl_metrics.roc_auc_score(key[:,1], pred[:,1])
@@ -67,6 +68,7 @@ def printMetrics(keyFile, predFile, subjNames):
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.title('ROC (Early seizure detection)')
+    plt.savefig('roc-%s-early.png' % '_'.join(subjNames))
     plt.show()
 
     auc_avg = (auc_sz + auc_early) / 2.0

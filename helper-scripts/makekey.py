@@ -21,7 +21,7 @@ num_segs = len(segs)
 CLIP_LENGTH = 15000000
 keyFile = ptName + '_key.csv'
 predFile = ptName + '_preds.csv'
-ptrn = re.compile(r'^\[([+-])\]\s+\((\d+),\s+(\d+)\)$')
+ptrn = re.compile(r'^([+-])\s+\((\d+),\s+(\d+)\)\s+((?:\d*\.)?\d+)$')
 
 def searchSegs(t):
     'Finds start time t in segments and updates segs_idx to match'
@@ -68,12 +68,10 @@ with open(logFile, 'rU') as f:
     n = 1
     for line in f.readlines():
         match = re.match(ptrn, line)
-        if match.group(1) == '+':
-            guess = 1
-        else:
-            guess = 0
+        pred = match.group(1)
         startTime = int(match.group(2))
         endTime = int(match.group(3))
+        score = float(match.group(4))
 
         # Check if valid time period
         if not searchSegs(startTime): continue
@@ -84,7 +82,7 @@ with open(logFile, 'rU') as f:
         # Write output files
         clipname = '%s_segment_%d' % (ptName, n)
         key_writer.writerow( (clipname, s, e) )
-        pred_writer.writerow( (clipname, guess, randint(0,1)) )
+        pred_writer.writerow( (clipname, score, randint(0,1)) )
         n += 1
 
 outfile_key.close()
