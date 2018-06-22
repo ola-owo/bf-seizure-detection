@@ -64,7 +64,7 @@ for seg in segments:
     pos = seg[0]
     while pos < seg[1]:
         try:
-            clip = ts.get_data(start=pos, length=CLIP_LENGTH, channels=ch)
+            clip = ts.get_data(start=pos, length=CLIP_LENGTH, channels=ch, use_cache=False)
             # note: actual clip length may be shorter than CLIP_LENGTH
         except Exception as e:
             print 'Pull failed at time %d:' % pos, e

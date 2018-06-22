@@ -5,6 +5,7 @@ This script can also be called standalone with:
 '''
 
 import os
+from random import shuffle
 import sys
 from blackfynn import Blackfynn
 
@@ -72,6 +73,7 @@ def getInterictalAnnots(ictals, segments):
 
     ### Second pass: Use only enough interictal clips to satisfy DATA_RATIO
     interictalsCopy = interictals
+    shuffle(interictalsCopy)
     interictals = []
     totalInterTime = 0
     totalIctalTime = reduce(lambda acc, (a,b): b - a + acc, ictals, 0)

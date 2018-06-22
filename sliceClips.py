@@ -81,12 +81,12 @@ def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType, skipNans):
 
         if skipNans:
             if np.any(np.isnan(data)):
-                print 'Skipped segment at position %d (some/all data is NaN)' % pos
+                print 'Skipped segment %d/%d of clip at position %d (some/all data is NaN)' % (i+1, clipSegs, pos)
                 nanSkips += 1
                 continue
 
             if np.any(np.all((data == 0), axis=1)):
-                print 'Skipped segment at position %D (empty channel)' % pos
+                print 'Skipped segment %d/%d at position %d (empty channel)' % (i+1, clipSegs, pos)
                 nanSkips += 1
                 continue
     

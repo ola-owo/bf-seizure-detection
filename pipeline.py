@@ -35,6 +35,29 @@ CLIP_ROOT = 'clips'
 ALGO_DATA_ROOT = 'seizure-data'
 PREDICTION_LAYER_NAME = 'UPenn_Seizure_Detections'
 
+timeseries_ids = {
+    'Old_Ripley': 'N:package:8d8ebbfd-56ac-463d-a717-d48f5d318c4c',
+    'R950': 'N:package:6af7dd3b-50f6-43cd-84ad-e0b3af5b636a',
+    'Ripley': 'N:package:401f556c-4747-4569-b1a8-9e6e50abf919',
+    'UCD2': 'N:package:86985e61-c940-4404-afa7-94d0add8333f',
+}
+
+layer_ids = {
+    'Old_Ripley': 16,
+    'R950': 143,
+    'Ripley': 1088,
+    'UCD2': 450,
+}
+
+channels_lists = {
+    'Ripley': [ 
+        'N:channel:95f4fdf5-17bf-492b-87ec-462d31154549',
+        'N:channel:c126f441-cbfe-4006-a08c-dc36bd309c38',
+        'N:channel:23d29190-37e4-48b0-885c-cfad77256efe',
+        'N:channel:07f7bcae-0b6e-4910-a723-8eda7423a5d2'
+    ],
+}
+
 ptName = sys.argv[1]
 
 try:
@@ -55,27 +78,17 @@ except:
 
 bf = Blackfynn()
 
-
-### Get TimeSeries
-timeseries_ids = {
-    'Old_Ripley': 'N:package:8d8ebbfd-56ac-463d-a717-d48f5d318c4c',
-    'R950': 'N:package:6af7dd3b-50f6-43cd-84ad-e0b3af5b636a',
-    'Ripley': 'N:package:401f556c-4747-4569-b1a8-9e6e50abf919',
-    'UCD2': 'N:package:86985e61-c940-4404-afa7-94d0add8333f',
-}
+### Get patient-specific settings
 ts = bf.get(timeseries_ids[ptName])
 segments = ts.segments()
 
-
-### Get annotation layer containing the seizures to train from
-layer_ids = {
-    'Old_Ripley': 16,
-    'R950': 143,
-    'Ripley': 1088,
-    'UCD2': 450,
-}
 layer = ts.get_layer(layer_ids[ptName])
 layerName = layer.name
+
+try:
+    ch = channels_lists[ptName]
+except KeyError:
+    ch = None
 
 ### Pull ictal and interictal annotation times
 print "Pulling annotations from layer '%s'..." % layerName
@@ -95,10 +108,10 @@ clipDir = CLIP_ROOT + '/' + ptName
 makeDir(clipDir)
 print 'Pulling ictal clips...'
 pullClips('%s/%s_annotations.txt' % (ANNOT_ROOT, ptName),
-          'ictal', ts, clipDir)
+          'ictal', ts, clipDir, ch)
 print 'Pulling interictal clips...'
 pullClips('%s/%s_interictal_annotations.txt' % (ANNOT_ROOT, ptName),
-          'interictal', ts, clipDir)
+          'interictal', ts, clipDir, ch)
 print ''
 
 

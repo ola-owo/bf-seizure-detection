@@ -10,7 +10,7 @@ from blackfynn import Blackfynn
 import hickle
 import scipy.io as sio
 
-def pullClips(annotFile, clipType, ts, outDir):
+def pullClips(annotFile, clipType, ts, outDir, channels=None):
     '''
     Using annotFile, download clips of type clipType from TimeSeries ts into folder outDir.
     '''
@@ -34,7 +34,7 @@ def pullClips(annotFile, clipType, ts, outDir):
         annots = f.read().splitlines()
         annots = [map(int, annot.split()) for annot in annots]
 
-    # save each clip to file
+    # pull and save each annotated clip
     num_saved = 0
     for annot in annots:
         if not annot:
@@ -45,16 +45,8 @@ def pullClips(annotFile, clipType, ts, outDir):
 
         # pull data for current clip 
         try:
-            if ts.name == 'Ripley': # workaround for Ripley having a reference electrode
-                ch = [
-                    'N:channel:95f4fdf5-17bf-492b-87ec-462d31154549',
-                    'N:channel:c126f441-cbfe-4006-a08c-dc36bd309c38',
-                    'N:channel:23d29190-37e4-48b0-885c-cfad77256efe',
-                    'N:channel:07f7bcae-0b6e-4910-a723-8eda7423a5d2'
-                ]
-            else:
-                ch = None
-            df = ts.get_data(start=annotStart, end=annotEnd, channels=ch)
+            df = ts.get_data(start=annotStart, end=annotEnd, channels=channels, use_cache=False)
+            # cache disabled to prevent malformed cache db errors
         except KeyboardInterrupt:
             raise
         except Exception as e:
@@ -63,18 +55,20 @@ def pullClips(annotFile, clipType, ts, outDir):
             continue
 
         # Handle gaps in data, if present
+        # (Taken from Steve Baldassano's pipeline)
         if df.empty: continue
         dfs = []
         i = 0
         for j in range(1, df.shape[0]):
             if i+1 == df.shape[0]: break
-            dT = (df.iloc[j].name - df.iloc[j-1].name).microseconds # time delta
-            if dT > 10000: # if gap is too big, split into 2 clips
+            dT = (df.iloc[j].name - df.iloc[j-1].name).total_seconds()
+            if dT > 0.01: # if gap is too big, split into 2 clips
                 dfs.append(df.iloc[i:j])
                 i = j
         dfs.append(df.iloc[i:])
         num_splits = len(dfs) - 1
 
+        # save clip(s)
         for df in dfs:
             array = df.transpose().values
             outfile = '%s/%s%d.hkl' % (outDir, outfile_prefix, num_saved+1)
