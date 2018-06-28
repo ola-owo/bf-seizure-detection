@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 '''
 Find line lengths at certain times,
-in order to figure out what threshold value to set
+in order to figure out threshold values
 
-Usage: python lineLength.py ptName [startTime]
+Usage: python lineLengthTest.py ptName [startTime]
 '''
 import sys
 import numpy as np
@@ -14,7 +14,8 @@ PREDICTION_LAYER_NAME = 'UPenn_Line_Length_Detector'
 
 timeseries_ids = { 
     'Old_Ripley': 'N:package:8d8ebbfd-56ac-463d-a717-d48f5d318c4c',
-    'R950': 'N:package:6af7dd3b-50f6-43cd-84ad-e0b3af5b636a',
+    'R_950': 'N:package:f950c9de-b775-4919-a867-02ae6a0c9370',
+    'R_951': 'N:package:6ff9eb72-4d70-4122-83a1-704d87cfb6b2',
     'Ripley': 'N:package:401f556c-4747-4569-b1a8-9e6e50abf919',
     'UCD1': 'N:package:3d9de38c-5ab2-4cfe-8f5b-3ed64d1a6b6e',
     'UCD2': 'N:package:86985e61-c940-4404-afa7-94d0add8333f',
@@ -56,7 +57,7 @@ def lineLength(clip):
     lengths = lengths[np.nonzero(lengths)] 
     if lengths.size == 0: return 0.0
 
-    # take the mean and normalize by clip length
+    # take the median and normalize by clip length
     length = np.median(lengths) / clip.shape[1] 
     return length
 

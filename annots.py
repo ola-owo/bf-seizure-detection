@@ -75,8 +75,8 @@ def getInterictalAnnots(ictals, segments):
     interictalsCopy = interictals
     shuffle(interictalsCopy)
     interictals = []
-    totalInterTime = 0
     totalIctalTime = reduce(lambda acc, (a,b): b - a + acc, ictals, 0)
+    totalInterTime = 0
 
     for inter in interictalsCopy:
         interictals.append(inter)

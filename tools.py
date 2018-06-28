@@ -1,5 +1,5 @@
 '''
-Miscellaneous pipeline functions
+Miscellaneous helper functions
 '''
 
 import csv
@@ -27,7 +27,13 @@ def clearDir(dirName):
             os.remove(filepath)
 
 class NoPrint:
-    'Suppress print outputs'
+    '''
+    Suppress print output.
+    Usage:
+    with NoPrint():
+        foo()
+        bar()
+    '''
 
     def __enter__(self):
         self._stdout = sys.stdout
@@ -37,3 +43,7 @@ class NoPrint:
     def __exit__(self, exc_type, exc_val, exc_tb):
         sys.stdout = self._stdout
         self._devnull.close()
+
+def timeString(epoch_usecs):
+    'Returns (example): "Thu Sep 13 02:22:50 2012 UTC (1347517370)"'
+    return DT.datetime.fromtimestamp(epoch_usecs).strftime('%c UTC ') + '(%d)' % epoch_usecs

@@ -3,7 +3,7 @@
 Slice annotation clips into 1sec segments and save to file.
 
 Standalone usage:
-python sliceClips.py clipDir segType fs ptName [trainingSz]
+python sliceClips.py clipRoot ptName segType fs
 '''
 
 import csv
@@ -16,7 +16,7 @@ import hickle
 import numpy as np
 import scipy.io as sio
 
-def sliceClips(clipDir, segType, fs, ptName, trainingSz = -1, skipNans = True):
+def sliceClips(clipDir, segType, fs, ptName, skipNans = True):
     '''
     Slice a clip from patient ptName and save it inside ./seizure-data/
     Returns: The number of segments successfully saved
@@ -25,8 +25,6 @@ def sliceClips(clipDir, segType, fs, ptName, trainingSz = -1, skipNans = True):
     segType: type of segment to save; either 'ictal', 'interictal', or 'test'
     fs: frequency
     ptName: patient name
-    trainingSz: number of seizures to use as training data.
-        The default value (-1) means all seizures are used.
     '''
 
     # Check clip type
@@ -45,18 +43,19 @@ def sliceClips(clipDir, segType, fs, ptName, trainingSz = -1, skipNans = True):
 
     # Load and slice clips
     while True:
-        if trainingSz >= 0 and numClips >= trainingSz:
-            break
-
         try:
-            clip = hickle.load('%s/%s%d.hkl' % (clipDir, clipFilePrefix, numClips+1))
+            clipName = '%s/%s%d.hkl' % (clipDir, clipFilePrefix, numClips+1)
+            clip = hickle.load(clipName)
             numClips += 1
         except:
+            print 'clip %s%d.hkl not found in %s' % (clipFilePrefix, numClips+1, clipDir)
             break
 
         clipSegs = int(clip.shape[1] / fs) # number of segments in the current clip
 
         c = _clip(clip, fs, 4, ptName, clipSegs, segTotal, segType, skipNans)
+        if c < clipSegs:
+            print (clipSegs - c), 'clips skipped in', clipName
         segTotal += c
 
     print '%d clips converted to %d segments.' % (numClips, segTotal)
@@ -83,15 +82,17 @@ def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType, skipNans):
             if np.any(np.isnan(data)):
                 print 'Skipped segment %d/%d of clip at position %d (some/all data is NaN)' % (i+1, clipSegs, pos)
                 nanSkips += 1
+                pos += fs
                 continue
 
             if np.any(np.all((data == 0), axis=1)):
                 print 'Skipped segment %d/%d at position %d (empty channel)' % (i+1, clipSegs, pos)
                 nanSkips += 1
+                pos += fs
                 continue
     
         # Mean normalize each channel signal (copied from the old pipeline)
-        data = data - np.mean(data, axis=1, keepdims=True)
+        data -= np.mean(data, axis=1, keepdims=True)
 
         # Save segment
         matData = {
@@ -99,8 +100,7 @@ def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType, skipNans):
             'channels': channels,
             'freq': fs,
         }
-        if segType == 'ictal':
-            matData['latency'] = i
+        if segType == 'ictal': matData['latency'] = i
 
         sio.savemat('seizure-data/{0}/{0}_{1}_segment_{2}.mat'.format(
                     ptName, segType, i+1 + segTotal - nanSkips), matData)
@@ -111,18 +111,13 @@ def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType, skipNans):
     return clipSegs - nanSkips
 
 if __name__ == '__main__':
-    clipRoot = sys.argv[1]
+    clipRoot = sys.argv[1].rstrip('/')
     ptName = sys.argv[2]
     segType = sys.argv[3]
     fs = int(sys.argv[4])
-
-    try:
-        trainingSz = int(sys.argv[5])
-    except IndexError:
-        trainingSz = -1
 
     clipDir = os.path.join(clipRoot, ptName)
     makeDir(clipDir)
     makeDir('seizure-data/' + ptName)
 
-    sliceClips(clipDir, segType, fs, ptName, trainingSz)
+    sliceClips(clipDir, segType, fs, ptName)

@@ -2,7 +2,7 @@
 """
 Use this to pull seizure data from Blackfynn for the pipeline.
 Can be called standalone as:
-> python pullClips.py annotFile clipType tsID outDir
+> python pullClips.py annotFile clipType tsID outDir [limit]
 """
 
 import sys
@@ -10,7 +10,7 @@ from blackfynn import Blackfynn
 import hickle
 import scipy.io as sio
 
-def pullClips(annotFile, clipType, ts, outDir, channels=None):
+def pullClips(annotFile, clipType, ts, outDir, channels=None, limit=None):
     '''
     Using annotFile, download clips of type clipType from TimeSeries ts into folder outDir.
     '''
@@ -32,6 +32,9 @@ def pullClips(annotFile, clipType, ts, outDir, channels=None):
         with times given in microseconds
         """
         annots = f.read().splitlines()
+        if limit is not None and limit < len(annots):
+            annots = annots[:limit]
+            print 'Using only the first %d clips' % limit
         annots = [map(int, annot.split()) for annot in annots]
 
     # pull and save each annotated clip
@@ -50,8 +53,7 @@ def pullClips(annotFile, clipType, ts, outDir, channels=None):
         except KeyboardInterrupt:
             raise
         except Exception as e:
-            print 'Pull failed at', annotStart
-            print e
+            print 'Pull failed at', annotStart, '\n\t', e
             continue
 
         # Handle gaps in data, if present
@@ -66,7 +68,6 @@ def pullClips(annotFile, clipType, ts, outDir, channels=None):
                 dfs.append(df.iloc[i:j])
                 i = j
         dfs.append(df.iloc[i:])
-        num_splits = len(dfs) - 1
 
         # save clip(s)
         for df in dfs:
@@ -83,6 +84,11 @@ if __name__ == '__main__':
     tsID = sys.argv[3]
     outDir = sys.argv[4].rstrip('/')
 
+    try:
+        limit = sys.argv[5]
+    except IndexError:
+        limit = None
+
     bf = Blackfynn()
     ts = bf.get(tsID)
-    pullClips(annotFile, clipType, ts, outDir)
+    pullClips(annotFile, clipType, ts, outDir, limit=limit)

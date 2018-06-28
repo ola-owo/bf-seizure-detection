@@ -1,4 +1,10 @@
 #!/usr/bin/env python2
+'''
+Takes in a pipeline output file (X_seizures.txt), and makes prediction and
+answer key files which can be used by metrics.py
+
+Usage: makekey.py ptName annotFile logFile
+'''
 
 import csv
 from random import randint
@@ -12,32 +18,31 @@ logFile = sys.argv[3]
 
 bf = Blackfynn()
 ts = bf.get('N:package:86985e61-c940-4404-afa7-94d0add8333f')
-segs = ts.segments()
 start = ts.start
 end = ts.end
+#segs = ts.segments()
+#segs_idx = 0
+#num_segs = len(segs)
 
-segs_idx = 0
-num_segs = len(segs)
 CLIP_LENGTH = 15000000
 keyFile = ptName + '_key.csv'
 predFile = ptName + '_preds.csv'
 ptrn = re.compile(r'^([+-])\s+\((\d+),\s+(\d+)\)\s+((?:\d*\.)?\d+)$')
 
-def searchSegs(t):
-    'Finds start time t in segments and updates segs_idx to match'
-    global segs_idx
-    while segs_idx < num_segs:
-        curr_seg = segs[segs_idx]
-        if curr_seg[0] <= t and curr_seg[1] > t:
-            return True
-        elif curr_seg[0] > t:
-            return False
-        segs_idx += 1
-    return False
+#def searchSegs(t):
+#    'Finds start time t in segments and updates segs_idx to match'
+#    global segs_idx
+#    while segs_idx < num_segs:
+#        curr_seg = segs[segs_idx]
+#        if curr_seg[0] <= t and curr_seg[1] > t:
+#            return True
+#        elif curr_seg[0] > t:
+#            return False
+#        segs_idx += 1
+#    return False
 
-def isSeizure(start, end):
+def isIctal(start, end):
     'Returns s: clip is a seizure, and e: clip is an early seizure'
-    result = (False,False)
     s = 0
     e = 0
     for ictal in ictals:
@@ -68,21 +73,21 @@ with open(logFile, 'rU') as f:
     n = 1
     for line in f.readlines():
         match = re.match(ptrn, line)
-        pred = match.group(1)
+        pred = int(match.group(1) == '+')
         startTime = int(match.group(2))
         endTime = int(match.group(3))
         score = float(match.group(4))
 
         # Check if valid time period
-        if not searchSegs(startTime): continue
+        #if not searchSegs(startTime): continue
 
         # Check if clip is in ictals
-        s, e = isSeizure(startTime, endTime)
+        s, _ = isIctal(startTime, endTime)
 
         # Write output files
-        clipname = '%s_segment_%d' % (ptName, n)
-        key_writer.writerow( (clipname, s, e) )
-        pred_writer.writerow( (clipname, score, randint(0,1)) )
+        clipname = '%s_%d-%d' % (ptName, startTime, endTime)
+        key_writer.writerow( (clipname, s) )
+        pred_writer.writerow( (clipname, pred, score) )
         n += 1
 
 outfile_key.close()
