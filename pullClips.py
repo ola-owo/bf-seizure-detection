@@ -10,9 +10,18 @@ from blackfynn import Blackfynn
 import hickle
 import scipy.io as sio
 
-def pullClips(annotFile, clipType, ts, outDir, channels=None, limit=None):
+def pullClips(annotFile, clipType, ts, outDir, channels=None, limit=0):
     '''
     Using annotFile, download clips of type clipType from TimeSeries ts into folder outDir.
+
+    annotFile: file containing annotation times
+    clipType: either 'ictal', 'interictal', or 'ts'
+    ts: TimeSeries object to pull from
+    outDir: folder to save clips into
+    channels: list of eeg channels to use
+        default (None) uses all channels
+    limit: maximum number of annotations to use
+        default (0) uses all annotations
     '''
 
     # Validate clip type
@@ -32,9 +41,9 @@ def pullClips(annotFile, clipType, ts, outDir, channels=None, limit=None):
         with times given in microseconds
         """
         annots = f.read().splitlines()
-        if limit is not None and limit < len(annots):
+        if limit > 0 and limit < len(annots):
             annots = annots[:limit]
-            print 'Using only the first %d clips' % limit
+            print 'Using only the first %d annotations' % limit
         annots = [map(int, annot.split()) for annot in annots]
 
     # pull and save each annotated clip

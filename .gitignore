@@ -15,3 +15,6 @@ submissions/
 # Other files for my project
 tests/
 blackfynnPipeline.zip
+
+# Used by liveDetect
+diaries.db

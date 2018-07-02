@@ -16,7 +16,7 @@ import hickle
 import numpy as np
 import scipy.io as sio
 
-def sliceClips(clipDir, segType, fs, ptName, skipNans = True):
+def sliceClips(clipDir, segType, fs, ptName):
     '''
     Slice a clip from patient ptName and save it inside ./seizure-data/
     Returns: The number of segments successfully saved
@@ -48,20 +48,19 @@ def sliceClips(clipDir, segType, fs, ptName, skipNans = True):
             clip = hickle.load(clipName)
             numClips += 1
         except:
-            print 'clip %s%d.hkl not found in %s' % (clipFilePrefix, numClips+1, clipDir)
             break
 
         clipSegs = int(clip.shape[1] / fs) # number of segments in the current clip
 
-        c = _clip(clip, fs, 4, ptName, clipSegs, segTotal, segType, skipNans)
+        c = _clip(clip, fs, 4, ptName, clipSegs, segTotal, segType)
         if c < clipSegs:
-            print (clipSegs - c), 'clips skipped in', clipName
+            print (clipSegs - c), 'segments skipped in', clipName
         segTotal += c
 
     print '%d clips converted to %d segments.' % (numClips, segTotal)
     return segTotal
 
-def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType, skipNans):
+def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType):
     '''
     Helper function for sliceClips()
 
@@ -71,25 +70,23 @@ def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType, skipNans):
     ptName: patient name
     clipSegs: number of segments to save
     segTotal: current total number of segments
-    skipNans: whether to skip segments with missing data
     '''
     pos = 0
     nanSkips = 0
     for i in range(clipSegs):
         data = clip[:, pos:pos+fs]
 
-        if skipNans:
-            if np.any(np.isnan(data)):
-                print 'Skipped segment %d/%d of clip at position %d (some/all data is NaN)' % (i+1, clipSegs, pos)
-                nanSkips += 1
-                pos += fs
-                continue
+        if np.any(np.isnan(data)):
+            print 'Skipped segment %d/%d of clip at position %d (some/all data is NaN)' % (i+1, clipSegs, pos)
+            nanSkips += 1
+            pos += fs
+            continue
 
-            if np.any(np.all((data == 0), axis=1)):
-                print 'Skipped segment %d/%d at position %d (empty channel)' % (i+1, clipSegs, pos)
-                nanSkips += 1
-                pos += fs
-                continue
+        if np.any(np.all((data == 0), axis=1)):
+            print 'Skipped segment %d/%d at position %d (empty channel)' % (i+1, clipSegs, pos)
+            nanSkips += 1
+            pos += fs
+            continue
     
         # Mean normalize each channel signal (copied from the old pipeline)
         data -= np.mean(data, axis=1, keepdims=True)

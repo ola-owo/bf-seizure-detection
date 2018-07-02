@@ -7,7 +7,10 @@ This script can also be called standalone with:
 import os
 from random import shuffle
 import sys
+
 from blackfynn import Blackfynn
+
+from settings import TIME_BUFFER, DATA_RATIO
 
 def makeAnnotFile(annotations, filename):
     '''
@@ -42,9 +45,6 @@ def getInterictalAnnots(ictals, segments):
     ictals: list of ictal annotations
     segments: list of all (non-empty) periods within the timeseries
     '''
-    TIME_BUFFER = 14400000000 # time (usec) to exclude before and after each seizure
-    DATA_RATIO = 10 # ratio of interictal to ictal time
-
     interictals = segments
     start = segments[0][0]
     end = segments[-1][1]

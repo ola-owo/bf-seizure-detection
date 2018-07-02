@@ -2,51 +2,31 @@
 '''
 Automatically checks for new data and tests it for seizures
 '''
-from datetime import datetime as dt
+import datetime as dt
+import glob
+import os.path
 import re
 import sqlite3
 
 from blackfynn import Blackfynn
+from matplotlib import pyplot as plt
 from matplotlib.dates import DateFormatter, date2num
 import numpy as np
 
 from lineLength import lineLength
 from pipeline import pipeline
+from settings import (
+    LIVE_LAYER_NAME, DIARY_DB_NAME, SZ_PLOT_ROOT, TS_IDs, CHANNELS
+)
 from testTimeSeries import testTimeSeries
+from tools import makeDir
 
-EPOCH = dt(1970,1,1)
-LIVE_LAYER_NAME = 'UPenn_Live_Detect'
-DIARY_DB_NAME = 'diaries.db'
-PTNAME_REGEX = re.compile(r'^[\w-]+$') # characters to allow in patient name
+EPOCH = dt.datetime(1970,1,1)
+PTNAME_REGEX = re.compile(r'^[\w-]+$') # only allow letters, numbers, and "-" in patient name
 
-patients = [
-    # Patients are tested in the order listed below.
-    # Note: each patient must also be listed in TS_IDs
-    'R950',
-    'R951',
-    'Ripley',
-    'UCD2',
-]
+patients = sorted(TS_IDs.keys())
 
-TS_IDs = {
-    'R950': 'N:package:f950c9de-b775-4919-a867-02ae6a0c9370',
-    'R951': 'N:package:6ff9eb72-4d70-4122-83a1-704d87cfb6b2',
-    'Ripley': 'N:package:401f556c-4747-4569-b1a8-9e6e50abf919',
-    'UCD2': 'N:package:86985e61-c940-4404-afa7-94d0add8333f',
-}
-
-channels_lists = { 
-    'Ripley': [ 
-        'N:channel:95f4fdf5-17bf-492b-87ec-462d31154549',
-        'N:channel:c126f441-cbfe-4006-a08c-dc36bd309c38',
-        'N:channel:23d29190-37e4-48b0-885c-cfad77256efe',
-        'N:channel:07f7bcae-0b6e-4910-a723-8eda7423a5d2'
-    ],
-}
-
-bf = Blackfynn()
-
-def detect(startTime, algo):
+def detect(bf, startTime, algo):
     '''
     Run classifier on all patients, starting from startTime.
 
@@ -55,7 +35,7 @@ def detect(startTime, algo):
     '''
 
     # Make sure startTime is valid
-    now = dt.utcnow()
+    now = dt.datetime.utcnow()
     endTime = int((now - EPOCH).total_seconds() * 1000000) # convert to epoch usecs
     if startTime >= endTime:
         raise ValueError("Time %d hasn't happened yet" % startTime)
@@ -63,16 +43,20 @@ def detect(startTime, algo):
     # Loop through each patient
     for ptName in patients:
         print 'Testing patient', ptName
-        ts = bf.get(TS_IDs[ptName])
-        ch = channels_lists.get(ptName, None)
+        try:
+            ts = bf.get(TS_IDs[ptName])
+        except Exception as e: # should probably make this more specific
+            print 'Error getting timeseries from Blackfynn:', e
+            continue
+        ch = CHANNELS.get(ptName, None)
 
         if algo == 'linelength':
-            lineLength(ts, ch, startTime, endTime, append=True, layer=LIVE_LAYER_NAME)
+            lineLength(ts, ch, startTime, endTime, append=True, layerName=LIVE_LAYER_NAME)
         elif algo == 'pipeline':
             # Train liveAlgo if classifier doesn't already exist
             classifier_exists = bool(glob.glob('data-cache/classifier_' + ptName + '_*'))
             if not classifier_exists:
-                pipeline.pipeline(ptName, annotating=False)
+                pipeline(ptName, annotating=False, bf=bf)
 
             layer = ts.add_layer(LIVE_LAYER_NAME)
             testTimeSeries(ts, layer, ptName, 'annotations', 'clips', startTime=startTime, endTime=endTime, logging=False, annotating=True)
@@ -81,11 +65,12 @@ def detect(startTime, algo):
 
     return endTime
 
-def diary():
+def diary(bf):
     '''
     Updates the patient's seizure diary.
     This should automatically run daily.
     '''
+    #today = dt.date.today().isoformat()
     conn = sqlite3.connect(DIARY_DB_NAME)
     c = conn.cursor()
 
@@ -101,7 +86,7 @@ def diary():
         c.execute('CREATE TABLE IF NOT EXISTS ' + ptName + ' (start INT, end INT)')
         lastSz = c.execute('SELECT end FROM ' + ptName + ' ORDER BY start DESC LIMIT 1').fetchone() 
  
-        # Add blackfynn annotations that aren't already in the diary
+        # Add seizure times that aren't already in the diary
         if lastSz is None:
             startTime = 0
         else:
@@ -114,18 +99,17 @@ def diary():
             for ann in anns:
                 c.execute('INSERT INTO ' + ptName + ' VALUES (?,?)', (ann.start, ann.end))
             conn.commit()
-        except:
-            # Layer doesn't exist
+        except: # if layer doesn't exist:
             print 'No new annotations to add.'
 
         # Plot all seizures
         seizures = c.execute('SELECT start, end FROM ' + ptName).fetchall()
-        if seizures is None:
+        if not seizures:
             print 'No seizures to plot.'
             continue
         seizures = np.array(seizures) / 1000000 # convert from usecs to secs
-        startTimes = [date2num(dt.utcfromtimestamp(s[0])) for s in seizures]
-        endTimes = [date2num(dt.utcfromtimestamp(s[1])) for s in seizures]
+        startTimes = [date2num(dt.datetime.utcfromtimestamp(s[0])) for s in seizures]
+        endTimes = [date2num(dt.datetime.utcfromtimestamp(s[1])) for s in seizures]
 
         y = np.ones(seizures.shape[0])
         fig, ax = plt.subplots(1)
@@ -137,6 +121,10 @@ def diary():
         fig.autofmt_xdate()
         plt.ylim(0.5, 1.5)
         plt.title('Seizure diary for ' + ptName)
-        plt.show() # probably better to save instead
+
+        # Save plot
+        szPlotDir = os.path.join(SZ_PLOT_ROOT, ptName)
+        makeDir(szPlotDir)
+        plt.savefig(os.path.join(szPlotDir, ptName + '.png'))
  
     conn.close()

@@ -11,11 +11,10 @@ import numpy as np
 
 from annots import makeAnnotFile
 from pullClips import pullClips
+from settings import FREQ, PL_CLIP_LENGTH
 from sliceClips import sliceClips
 from train import train
 from tools import clearDir, NoPrint
-
-CLIP_LENGTH = 30000000 # length (usec) of each clip to test
 
 def testTimeSeries(ts, layer, ptName, annotDir, clipDir, startTime=None, endTime=None, logging=True, annotating=True):
     '''
@@ -34,7 +33,22 @@ def testTimeSeries(ts, layer, ptName, annotDir, clipDir, startTime=None, endTime
     if logging: logfile = ptName + '_seizures.txt'
     timeSegments = ts.segments()
 
-    # TODO: train liveALgo if classifier doesn't already exist
+    # Make sure startTime and endTime are valid
+    if startTime is not None:
+        if startTime < ts.start:
+            print 'Warning: startTime', startTime, 'is earlier than the beginning of the Timeseries. Ignoring startTime argument...'
+            startTime = None
+        elif startTime > ts.end:
+            print 'Warning: startTime', startTime, 'is after the end of the Timeseries. No data will be analyzed.'
+            return
+
+    if endTime is not None:
+        if endTime > ts.end:
+            print 'Warning: endTime', endTime, 'is later than the end of the Timeseries. Ignoring endTime argument...'
+            endTime = None
+        elif endTime < ts.start:
+            print 'Warning: endTime', endTime, 'is before the beginning the Timeseries. No data will be analyzed.'
+            return
 
     if startTime:
         # Get the idx of the time segment to start at, and exclude all time before it
@@ -60,13 +74,13 @@ def testTimeSeries(ts, layer, ptName, annotDir, clipDir, startTime=None, endTime
     for timeSeg in timeSegments:
         pos = max(pos, timeSeg[0])
         while pos < timeSeg[1]:
-            print 'Testing position (%d, %d)' % (pos, pos + CLIP_LENGTH)
+            print 'Testing position (%d, %d)' % (pos, pos + PL_CLIP_LENGTH)
 
             with NoPrint(): # suppress console output
                 annotFile = '%s/%s_timeseries.txt' % (annotDir, ptName)
-                makeAnnotFile([(pos, pos + CLIP_LENGTH)], annotFile)
+                makeAnnotFile([(pos, pos + PL_CLIP_LENGTH)], annotFile)
                 pullClips(annotFile, 'timeseries', ts, clipDir)
-                segs = sliceClips(clipDir, 'test', 250, ptName)
+                segs = sliceClips(clipDir, 'test', FREQ, ptName)
 
                 if segs: 
                     train('make_predictions', target=ptName)
@@ -87,13 +101,13 @@ def testTimeSeries(ts, layer, ptName, annotDir, clipDir, startTime=None, endTime
             # (if annotating) mark clip as a seizure and upload annonation to blackfynn, and
             # (if logging) write positive prediction to file
             if meanScore > 0.5:
-                msg = '+ (%d, %d) %f\n' % (pos, pos + CLIP_LENGTH, meanScore)
+                msg = '+ (%d, %d) %f\n' % (pos, pos + PL_CLIP_LENGTH, meanScore)
                 if not szStarted:
                     szStarted = True
                     szStart = pos
 
             else:
-                msg = '- (%d, %d) %f\n' % (pos, pos + CLIP_LENGTH, meanScore)
+                msg = '- (%d, %d) %f\n' % (pos, pos + PL_CLIP_LENGTH, meanScore)
                 if szStarted:
                     szStarted = False
                     szEnd = pos
@@ -104,7 +118,7 @@ def testTimeSeries(ts, layer, ptName, annotDir, clipDir, startTime=None, endTime
             if logging:
                 with open(logfile, 'a') as f: f.write(msg)
 
-            pos += CLIP_LENGTH
+            pos += PL_CLIP_LENGTH
 
             ### Delete temporary clip data
             # Annotation:

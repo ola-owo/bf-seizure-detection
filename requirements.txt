@@ -1,4 +1,4 @@
-blackfynn==2.2.1
+blackfynn==2.3.2
 hickle==2.1.0
 matplotlib==2.1.1
 numpy==1.14.5

@@ -23,50 +23,23 @@ from blackfynn import Blackfynn
 from annots import *
 from pullClips import pullClips
 from sliceClips import sliceClips
+from settings import (
+    ALGO_DATA_ROOT, ANNOT_ROOT, CHANNELS, CLIP_ROOT,
+    FREQ, GOLD_STD_LAYERS, PL_LAYER_NAME, TRAINING_SZ_LIMIT, TS_IDs
+)
 from testTimeSeries import testTimeSeries
 from train import train
 from tools import *
 
-
-### NOTE: ALGO_DATA_ROOT must match the value of competition-data-dir
-### in liveAlgo/SETTINGS.json
-ANNOT_ROOT = 'annotations'
-CLIP_ROOT = 'clips'
-ALGO_DATA_ROOT = 'seizure-data'
-PREDICTION_LAYER_NAME = 'UPenn_Seizure_Detections'
-FREQ = 250
-
-timeseries_ids = {
-    'Old_Ripley': 'N:package:8d8ebbfd-56ac-463d-a717-d48f5d318c4c',
-    'R950': 'N:package:6af7dd3b-50f6-43cd-84ad-e0b3af5b636a',
-    'Ripley': 'N:package:401f556c-4747-4569-b1a8-9e6e50abf919',
-    'UCD2': 'N:package:86985e61-c940-4404-afa7-94d0add8333f',
-}
-
-layer_ids = {
-    'Old_Ripley': 16,
-    'R950': 143,
-    'Ripley': 1088,
-    'UCD2': 450,
-}
-
-channels_lists = {
-    'Ripley': [ 
-        'N:channel:95f4fdf5-17bf-492b-87ec-462d31154549',
-        'N:channel:c126f441-cbfe-4006-a08c-dc36bd309c38',
-        'N:channel:23d29190-37e4-48b0-885c-cfad77256efe',
-        'N:channel:07f7bcae-0b6e-4910-a723-8eda7423a5d2'
-    ],
-}
-
-def pipeline(ptName, annotating, startTime=None, endTime=None):
+def pipeline(ptName, annotating=True, startTime=None, endTime=None, bf=None):
     ### Get patient-specific settings
-    bf = Blackfynn()
-    ts = bf.get(timeseries_ids[ptName])
+    if bf is None: # WORKAROUND: see crontest.py
+        bf = Blackfynn()
+    ts = bf.get(TS_IDs[ptName])
     segments = ts.segments()
-    layer = ts.get_layer(layer_ids[ptName])
+    layer = ts.get_layer(GOLD_STD_LAYERS[ptName])
     layerName = layer.name
-    ch = channels_lists.get(ptName, None)
+    ch = CHANNELS.get(ptName, None)
 
     ### Pull ictal and interictal annotation times
     print "Pulling annotations from layer '%s'..." % layerName
@@ -79,6 +52,7 @@ def pipeline(ptName, annotating, startTime=None, endTime=None):
     makeAnnotFile(interictals, '%s/%s_interictal_annotations.txt' % \
                                (ANNOT_ROOT, ptName))
     print ''
+    sys.stdout.flush()
 
 
     ### Pull clips
@@ -86,11 +60,12 @@ def pipeline(ptName, annotating, startTime=None, endTime=None):
     makeDir(clipDir)
     print 'Pulling ictal clips...'
     pullClips('%s/%s_annotations.txt' % (ANNOT_ROOT, ptName),
-              'ictal', ts, clipDir, ch, limit=4)
+              'ictal', ts, clipDir, ch, limit=TRAINING_SZ_LIMIT)
     print 'Pulling interictal clips...'
     pullClips('%s/%s_interictal_annotations.txt' % (ANNOT_ROOT, ptName),
               'interictal', ts, clipDir, ch)
     print ''
+    sys.stdout.flush()
 
     ### Slice and preprocess clips
     algoDataDir = ALGO_DATA_ROOT + '/' + ptName
@@ -100,6 +75,7 @@ def pipeline(ptName, annotating, startTime=None, endTime=None):
     print 'Preparing interictal data for classifier...'
     sliceClips(clipDir, 'interictal', FREQ, ptName)
     print ''
+    sys.stdout.flush()
 
 
     ### Prepare classifier
@@ -111,12 +87,14 @@ def pipeline(ptName, annotating, startTime=None, endTime=None):
     print 'Training classifier...'
     train('train_model', target=ptName)
     print ''
+    sys.stdout.flush()
 
 
     ### Compute cross-Validation scores
     print 'Computing cross-validation scores...'
     train('cv', target=ptName)
     print ''
+    sys.stdout.flush()
 
     if annotating:
         ### Make predictions on entire timeseries
@@ -124,10 +102,10 @@ def pipeline(ptName, annotating, startTime=None, endTime=None):
 
         try:
             # Delete layer if it already exists
-            layer = ts.get_layer(PREDICTION_LAYER_NAME)
+            layer = ts.get_layer(PL_LAYER_NAME)
             layer.delete()
         finally:
-            layer = ts.add_layer(PREDICTION_LAYER_NAME)
+            layer = ts.add_layer(PL_LAYER_NAME)
 
         testTimeSeries(ts, layer, ptName, ANNOT_ROOT, clipDir, startTime, endTime)
 
@@ -135,23 +113,23 @@ def pipeline(ptName, annotating, startTime=None, endTime=None):
         # testTimeSeries(ts, None, ptName, ANNOT_ROOT, clipDir, startTime, endTIme, annotating=False)
 
 if __name__ == '__main__':
+    num_args = len(sys.argv) - 1
+
     ptName = sys.argv[1]
-    kwargs = sys.argv[2:]
 
-    num_kwargs = len(kwargs)
-    if num_kwargs >= 2:
-        if kwargs[1] == 'annotate': annotating = True
-        else: annotating = False
-
-        if num_kwargs >= 3:
-            startTime = int(kwargs[2])
-            if num_kwargs >= 4:
-                endTime = int(kwargs[3])
-            else:
-                endTime = None
-        else:
-            startTime = None
+    if num_args >= 2:
+        annotating = (sys.argv[2] == 'annotate')
     else:
         annotating = False
+
+    if num_args >= 3:
+        startTime = int(sys.argv[3])
+    else:
+        startTime = None
+
+    if num_args >= 4:
+        endTime = int(sys.argv[4])
+    else:
+        endTime = None
 
     pipeline(ptName, annotating, startTime, endTime)

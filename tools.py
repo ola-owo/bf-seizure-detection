@@ -5,6 +5,7 @@ Miscellaneous helper functions
 import csv
 import os
 import sys
+import datetime as DT
 
 def makeDir(dirName):
     'Make directory dirName. If directory already exists, do nothing.'
@@ -29,10 +30,11 @@ def clearDir(dirName):
 class NoPrint:
     '''
     Suppress print output.
-    Usage:
-    with NoPrint():
-        foo()
-        bar()
+
+    Example:
+        with NoPrint():
+            doStuff()
+            doMoreStuff()
     '''
 
     def __enter__(self):
@@ -46,4 +48,5 @@ class NoPrint:
 
 def timeString(epoch_usecs):
     'Returns (example): "Thu Sep 13 02:22:50 2012 UTC (1347517370)"'
-    return DT.datetime.fromtimestamp(epoch_usecs).strftime('%c UTC ') + '(%d)' % epoch_usecs
+    epoch_secs = epoch_usecs / 1000000.
+    return DT.datetime.fromtimestamp(epoch_secs).strftime('%c UTC ') + '(unix time %d)' % epoch_usecs
