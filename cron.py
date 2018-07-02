@@ -44,7 +44,7 @@ def detectJob():
     sys.stdout.flush() # make sure all print statements are outputted by this point
     print '=== Up to date as of', timeString(detectJob.startTime), '==='
 
-detectJob.startTime = getTime()
+detectJob.startTime = getTime() - DETECTION_INTERVAL * 60000000
 
 def diaryJob():
     print '=== Updating seizure diaries ==='
