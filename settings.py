@@ -20,9 +20,9 @@ CHANNELS = {
 ### Pipeline settings ###
 
 # (pipeline)
-ANNOT_ROOT = 'annotations'
+ANNOT_ROOT = 'annotations' # where annotation files are stored
 ALGO_DATA_ROOT = 'seizure-data' # NOTE: this must match competition-data-dir in liveAlgo/SETTINGS.json
-CLIP_ROOT = 'clips'
+CLIP_ROOT = 'clips' # where seizure clips are stored
 PL_LAYER_NAME = 'UPenn_Seizure_Detections'
 FREQ = 250 # frequency (hz) of each timeseries
 TRAINING_SZ_LIMIT = 4 # number of seizures to use as training data

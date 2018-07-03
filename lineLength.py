@@ -104,13 +104,13 @@ def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_
 
             if l > threshold:
                 #print '+', l, (startTime, endTime) # DEBUG
-                sys.stdout.write('\r+ %f (%d, %d)' % (l, startTime, endTime))
+                sys.stdout.write('+ %f (%d, %d)' % (l, startTime, endTime))
                 sys.stdout.flush()
 
                 layer.insert_annotation('Possible seizure', start=startTime, end=endTime)
             else:
                 #print '-', l, (startTime, endTime) # DEBUG
-                sys.stdout.write('\r- %f (%d, %d)' % (l, startTime, endTime))
+                sys.stdout.write('- %f (%d, %d)' % (l, startTime, endTime))
                 sys.stdout.flush()
 
             pos += LL_CLIP_LENGTH
