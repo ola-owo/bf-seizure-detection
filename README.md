@@ -1,11 +1,17 @@
-# blackfynnPipeline
+# blackfynn-seizure-detection
+Before running anything, make sure all of the correct settings and patient-specific data are set in `settings.py`.
 
-This pipeline is used to automatically download EEG data hosted on blackfynn and train the classifier.
+This pipeline provides automated seizure detection of EEG data that is hosted on Blackfynn. It is adapted from an [old pipeline](https://github.com/sbaldassano/blackfynnPipeline) that was made for Blackfynn's Matlab API.
 
-The pipeline is adapted from the repo of the same name at https://github.com/sbaldassano/blackfynnPipeline, but modified to work with the current Blackfynn API.
+Two seizure detecctors are included: a random forest classifier and a line length detector. `pipeline.py` and `lineLength.py` can be run to use either of these classifiers to predict seizures along an entire EEG TimeSeries. In addition, `cron.py` can be used for real-time seizure detection.
 
-The classifier comes from the Kaggle contest-winning seizure detector algorithm, hosted here: https://github.com/MichaelHills/seizure-detection
+## Random Forest Classifier
+`pipeline.py` automatically downloads EEG clips, trains the random forest (stored in `liveAlgo/`), and runs the classifier. The script calls `annots`, `pullClips`, `sliceClips`, and `testTimeSeries`, each of which can also be run separately.
 
-To use this pipeline, use the command `python pipeline.py patientName`. However, you first need to add and/or uncomment the name of the patient in `target` in liveAlgo/seizure\_detection.py. You also must make sure that your ANNOT\_ROOT folder contains both ictal and interictal files for the patient. (makeAnnotFile might help with this).
+The random forest was created for a Kaggle contest and is hosted separately [here:](https://github.com/MichaelHills/seizure-detection)
 
-Each step can be done individually by calling `pullClips.py`, `sliceClips.py`, and `train.py` from the command line.
+## Line Length Detector
+A line length detector is also provided and can be run using `lineLength.py`. It is faster and more sensitive than the random forest, which may be preferred depending on the situation.
+
+## Live Detection
+`cron.py` will, at a specified time interval, check for new EEG data and search it for possible seizures. Either the line length detector or the random forest classifier can be used.
