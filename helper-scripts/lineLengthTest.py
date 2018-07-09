@@ -5,48 +5,32 @@ in order to figure out threshold values
 
 Usage: python lineLengthTest.py ptName [startTime]
 '''
+import os
 import sys
 import numpy as np
 from blackfynn import Blackfynn
 
-CLIP_LENGTH = 60000000 # 1 minute in usec
-PREDICTION_LAYER_NAME = 'UPenn_Line_Length_Detector'
-
-timeseries_ids = { 
-    'Old_Ripley': 'N:package:8d8ebbfd-56ac-463d-a717-d48f5d318c4c',
-    'R_950': 'N:package:f950c9de-b775-4919-a867-02ae6a0c9370',
-    'R_951': 'N:package:6ff9eb72-4d70-4122-83a1-704d87cfb6b2',
-    'Ripley': 'N:package:401f556c-4747-4569-b1a8-9e6e50abf919',
-    'UCD1': 'N:package:3d9de38c-5ab2-4cfe-8f5b-3ed64d1a6b6e',
-    'UCD2': 'N:package:86985e61-c940-4404-afa7-94d0add8333f',
-}
+#sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+#print os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+#print os.path.abspath('.')
+sys.path.append('..')
+from settings import CHANNELS, LL_CLIP_LENGTH, TS_IDs
 
 ptName = sys.argv[1]
 bf = Blackfynn()
-ts = bf.get(timeseries_ids[ptName])
+ts = bf.get(TS_IDs[ptName])
+ch = CHANNELS.get(ptName, None)
 segments = ts.segments()
 
 try:
     startTime = int(sys.argv[2])
-    for i, (a,b) in enumerate(segments):
-        if b > startTime: break
+    i = next(i for i, (a,b) in enumerate(segments) if b > startTime)
     segments[:i] = []
     startTime = max(segments[0][0], startTime)
-    print 'start time:', startTime
     segments[0] = (startTime, segments[0][1])
+    print 'start time:', startTime
 except:
     startTime = segments[0][0]
-
-if ptName == 'Ripley':
-    # Workaround since Ripley has 5 channels
-    ch = [ 
-        'N:channel:95f4fdf5-17bf-492b-87ec-462d31154549',
-        'N:channel:c126f441-cbfe-4006-a08c-dc36bd309c38',
-        'N:channel:23d29190-37e4-48b0-885c-cfad77256efe',
-        'N:channel:07f7bcae-0b6e-4910-a723-8eda7423a5d2'
-    ]
-else:
-    ch = None
 
 def lineLength(clip):
     lengths = np.zeros(clip.shape[0]).astype('float64')
@@ -65,11 +49,16 @@ for seg in segments:
     pos = seg[0]
     while pos < seg[1]:
         try:
-            clip = ts.get_data(start=pos, length=CLIP_LENGTH, channels=ch, use_cache=False)
-            # note: actual clip length may be shorter than CLIP_LENGTH
+            clip = ts.get_data(start=pos, length=LL_CLIP_LENGTH, channels=ch, use_cache=False)
+            # note: actual clip length may be shorter than LL_CLIP_LENGTH
         except Exception as e:
             print 'Pull failed at time %d:' % pos, e
+            pos += LL_CLIP_LENGTH
             continue
+        if clip.empty:
+            pos += LL_CLIP_LENGTH
+            continue
+
         startTime = clip.iloc[0].name.value / 1000 # convert to Unix epoch time, in usecs
         endTime = clip.iloc[-1].name.value / 1000
         clip.fillna(0, inplace=True) # replace NaNs with zeros
@@ -79,4 +68,4 @@ for seg in segments:
         print 't', (startTime, endTime), '\tlength:', length
         raw_input()
 
-        pos += CLIP_LENGTH
+        pos += LL_CLIP_LENGTH

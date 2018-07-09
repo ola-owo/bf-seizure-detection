@@ -24,8 +24,8 @@ from annots import *
 from pullClips import pullClips
 from sliceClips import sliceClips
 from settings import (
-    ALGO_DATA_ROOT, ANNOT_ROOT, CHANNELS, CLIP_ROOT,
-    FREQ, GOLD_STD_LAYERS, PL_LAYER_NAME, TRAINING_SZ_LIMIT, TS_IDs
+    CHANNELS,
+    FREQ, GOLD_STD_LAYERS, PL_LAYER_NAME, PL_ROOT, TRAINING_SZ_LIMIT, TS_IDs
 )
 from testTimeSeries import testTimeSeries
 from train import train
@@ -43,32 +43,33 @@ def pipeline(ptName, annotating=True, startTime=None, endTime=None, bf=None):
 
     ### Pull ictal and interictal annotation times
     print "Pulling annotations from layer '%s'..." % layerName
-    makeDir(ANNOT_ROOT)
+    annotDir = PL_ROOT + '/annotations'
+    makeDir(annotDir)
     ictals = getIctalAnnots(layer)
-    makeAnnotFile(ictals, '%s/%s_annotations.txt' % (ANNOT_ROOT, ptName))
+    makeAnnotFile(ictals, '%s/%s_annotations.txt' % (annotDir, ptName))
 
     print 'Generating interictal annotations...'
     interictals = getInterictalAnnots(ictals, segments)
     makeAnnotFile(interictals, '%s/%s_interictal_annotations.txt' % \
-                               (ANNOT_ROOT, ptName))
+                               (annotDir, ptName))
     print ''
     sys.stdout.flush()
 
 
     ### Pull clips
-    clipDir = CLIP_ROOT + '/' + ptName
+    clipDir = PL_ROOT + '/clips/' + ptName
     makeDir(clipDir)
     print 'Pulling ictal clips...'
-    pullClips('%s/%s_annotations.txt' % (ANNOT_ROOT, ptName),
+    pullClips('%s/%s_annotations.txt' % (annotDir, ptName),
               'ictal', ts, clipDir, ch, limit=TRAINING_SZ_LIMIT)
     print 'Pulling interictal clips...'
-    pullClips('%s/%s_interictal_annotations.txt' % (ANNOT_ROOT, ptName),
+    pullClips('%s/%s_interictal_annotations.txt' % (annotDir, ptName),
               'interictal', ts, clipDir, ch)
     print ''
     sys.stdout.flush()
 
     ### Slice and preprocess clips
-    algoDataDir = ALGO_DATA_ROOT + '/' + ptName
+    algoDataDir = PL_ROOT + '/seizure-data/' + ptName
     makeDir(algoDataDir)
     print 'Preparing ictal data for classifier...'
     sliceClips(clipDir, 'ictal', FREQ, ptName)
@@ -79,8 +80,8 @@ def pipeline(ptName, annotating=True, startTime=None, endTime=None, bf=None):
 
 
     ### Prepare classifier
-    with open('liveAlgo/targets.json', 'w') as f:
-        json.dump([ptName], f)
+    #with open('liveAlgo/targets.json', 'w') as f:
+    #    json.dump([ptName], f)
 
 
     ### Train classifier
@@ -104,13 +105,15 @@ def pipeline(ptName, annotating=True, startTime=None, endTime=None, bf=None):
             # Delete layer if it already exists
             layer = ts.get_layer(PL_LAYER_NAME)
             layer.delete()
+        except:
+            pass
         finally:
             layer = ts.add_layer(PL_LAYER_NAME)
 
-        testTimeSeries(ts, layer, ptName, ANNOT_ROOT, clipDir, startTime, endTime)
+        testTimeSeries(ts, layer, ptName, startTime, endTime)
 
         ### Use "annotating=False" option if you're not writing annotations to Blackfynn
-        # testTimeSeries(ts, None, ptName, ANNOT_ROOT, clipDir, startTime, endTIme, annotating=False)
+        # testTimeSeries(ts, None, ptName, startTime, endTIme, annotating=False)
 
 if __name__ == '__main__':
     num_args = len(sys.argv) - 1

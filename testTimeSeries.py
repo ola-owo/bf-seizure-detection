@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 '''
 Standalone usage:
-python testTimeSeries.py tsID layerID ptName annotDir clipDir [[log] [annotate]]
+python testTimeSeries.py tsID layerID ptName [[log] [annotate]]
 '''
 import os
 import sys
@@ -11,12 +11,15 @@ import numpy as np
 
 from annots import makeAnnotFile
 from pullClips import pullClips
-from settings import FREQ, PL_CLIP_LENGTH
+from settings import FREQ, PL_CLIP_LENGTH, PL_ROOT
 from sliceClips import sliceClips
 from train import train
 from tools import clearDir, NoPrint
 
-def testTimeSeries(ts, layer, ptName, annotDir, clipDir, startTime=None, endTime=None, logging=True, annotating=True):
+annotDir = PL_ROOT + '/annotations'
+clipDir = PL_ROOT + '/clips'
+
+def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, logging=True, annotating=True):
     '''
     Test liveAlgo classifier on an entire timeseries.
     Detected seizures are written to the given annotation layer.
@@ -24,8 +27,6 @@ def testTimeSeries(ts, layer, ptName, annotDir, clipDir, startTime=None, endTime
     ts: TimeSeries object to be tested
     layer: Annotation layer object to write to
     ptName: Subject name
-    annotDir: Annotation folder
-    clipDir: Location of the current subject's seizure/nonseizure clips
     logging: Whether to log results to file
     annotating: Whether to upload annotations to Blackfynn
     '''
@@ -84,9 +85,9 @@ def testTimeSeries(ts, layer, ptName, annotDir, clipDir, startTime=None, endTime
 
                 if segs: 
                     train('make_predictions', target=ptName)
-                    submissions = [f for f in os.listdir('submissions') if ptName in f]
+                    submissions = [f for f in os.listdir(PL_ROOT + 'submissions') if ptName in f]
                     submissions.sort()
-                    predFile = os.path.join('submissions', submissions[-1])
+                    predFile = PL_ROOT + 'submissions' + submissions[-1]
                     preds = np.loadtxt(predFile, delimiter=',', skiprows=1, usecols=1).astype(float)
                     if preds.shape == (): 
                         # if preds has only one element, convert it from 0-D to 1-D
@@ -122,7 +123,7 @@ def testTimeSeries(ts, layer, ptName, annotDir, clipDir, startTime=None, endTime
 
             ### Delete temporary clip data
             # Annotation:
-            os.remove(os.path.join(annotDir, ptName + '_timeseries.txt'))
+            os.remove(annotDir + '/' + ptName + '_timeseries.txt')
             # Submission file:
             try:
                 os.remove(predFile)
@@ -131,12 +132,14 @@ def testTimeSeries(ts, layer, ptName, annotDir, clipDir, startTime=None, endTime
             # Timeseries clip:
             clearDir(clipDir)
             # Test segments:
-            clearDir(os.path.join('seizure-data', ptName))
+            clearDir(PL_ROOT + '/seizure-data/' + ptName)
             # Cached classifier data
-            for fname in os.listdir('data-cache'):
-                if (fname.startswith('data_test_' + ptName) or
-                    fname.startswith('predictions_' + ptName)):
-                    os.remove(os.path.join('data-cache', fname))
+            for fname in os.listdir(PL_ROOT + '/data-cache'):
+                if (
+                    fname.startswith('data_test_' + ptName) or
+                    fname.startswith('predictions_' + ptName)
+                ):
+                    os.remove(PL_ROOT + '/data-cache' + fname)
 
 if __name__ == '__main__':
     bf = Blackfynn()
@@ -144,8 +147,6 @@ if __name__ == '__main__':
     tsID = sys.argv[1]
     layerID = sys.argv[2]
     ptName = sys.argv[3]
-    annotDir = sys.argv[4].rstrip('/')
-    clipDir = sys.argv[5].rstrip('/')
 
     try:
         kwargs = sys.argv[6:]
@@ -161,4 +162,4 @@ if __name__ == '__main__':
     except ValueError:
         layer = None
 
-    testTimeSeries(ts, layer, ptName, annotDir, clipDir, logging, annotating)
+    testTimeSeries(ts, layer, ptName, logging, annotating)

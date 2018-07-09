@@ -16,7 +16,8 @@ import numpy as np
 from lineLength import lineLength
 from pipeline import pipeline
 from settings import (
-    CHANNELS, LIVE_LAYER_NAME, DIARY_DB_NAME, GOLD_STD_LAYERS, SZ_PLOT_ROOT, TS_IDs
+    CHANNELS, DIARY_DB_NAME, GOLD_STD_LAYERS,
+    LL_LAYER_NAME, PL_LAYER_NAME, PL_ROOT, SZ_PLOT_ROOT, TS_IDs
 )
 from testTimeSeries import testTimeSeries
 from tools import makeDir
@@ -27,6 +28,8 @@ plt.switch_backend('agg')
 EPOCH = dt.datetime(1970,1,1)
 PTNAME_REGEX = re.compile(r'^[\w-]+$') # only allow letters, numbers, and "-" in patient name
 
+annotDir = PL_ROOT + '/annotations'
+clipDir = PL_ROOT + '/clips'
 patients = sorted(TS_IDs.keys())
 
 def detect(bf, startTime, algo):
@@ -54,26 +57,33 @@ def detect(bf, startTime, algo):
         ch = CHANNELS.get(ptName, None)
 
         if algo == 'linelength':
-            lineLength(ts, ch, startTime, endTime, append=True, layerName=LIVE_LAYER_NAME)
+            lineLength(ts, ch, startTime, endTime, append=True, layerName=LL_LAYER_NAME)
         elif algo == 'pipeline':
             # Train liveAlgo if classifier doesn't already exist
-            classifier_exists = bool(glob.glob('data-cache/classifier_' + ptName + '_*'))
+            classifier_exists = bool(glob.glob(PL_ROOT + '/data-cache/classifier_' + ptName + '_*'))
             if not classifier_exists:
                 pipeline(ptName, annotating=False, bf=bf)
 
-            layer = ts.add_layer(LIVE_LAYER_NAME)
-            testTimeSeries(ts, layer, ptName, 'annotations', 'clips', startTime=startTime, endTime=endTime, logging=False, annotating=True)
+            layer = ts.add_layer(PL_LAYER_NAME)
+            testTimeSeries(ts, layer, ptName, startTime=startTime, endTime=endTime, logging=False, annotating=True)
         else:
             raise ValueError("Invalid classifier option '%s'" % algo)
 
     return endTime
 
-def diary(bf):
+def diary(bf, algo):
     '''
     Updates the patient's seizure diary.
     This should automatically run daily.
     '''
-    #today = dt.date.today().isoformat()
+    if algo == 'linelength':
+        liveLayerName = LL_LAYER_NAME
+    elif algo == 'pipeline':
+        liveLayerName = PL_LAYER_NAME
+    else:
+        raise ValueError("Invalid classifier option '%s'" % algo)
+
+
     conn = sqlite3.connect(DIARY_DB_NAME)
     c = conn.cursor()
 
@@ -96,7 +106,7 @@ def diary(bf):
             startTime = lastSz[1]
 
         try:
-            layer = ts.get_layer(LIVE_LAYER_NAME)
+            layer = ts.get_layer(liveLayerName)
             anns = layer.annotations(start=startTime)
             if anns:
                 print 'Adding', len(anns), 'new annotations to diary.'

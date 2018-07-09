@@ -2,7 +2,7 @@
 '''
 Line length seizure detector
 
-Usage: python lineLength.py ptName [startTime [append]]
+Usage: python lineLength.py ptName [startTime [endTime]] [append]
 '''
 import sys
 import numpy as np
@@ -27,7 +27,6 @@ def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_
     ptName = ts.name
     threshold = THRESHOLDS[ptName]
     segments = ts.segments()
-    pos = segments[0][0]
 
     # Make sure startTime and endTime are valid
     if startTime is not None:
@@ -50,8 +49,11 @@ def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_
     if startTime is None:
         startTime = segments[0][0]
     else:
-        i = next(i for i, (a,b) in enumerate(segments) if b > startTime)
-        segments[:i] = []
+        try:
+            i = next(i for i, (a,b) in enumerate(segments) if b > startTime)
+            segments[:i] = []
+        except StopIteration:
+            pass
         startTime = max(segments[0][0], startTime)
         print 'start time:', startTime
         segments[0] = (startTime, segments[0][1])
@@ -61,8 +63,11 @@ def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_
         endTime = segments[-1][1]
     else:
         l = len(segments)
-        i = next(l-1 - i for i, (a,b) in enumerate(reversed(segments)) if a < endTime)
-        segments[i+1:] = []
+        try:
+            i = next(l-1 - i for i, (a,b) in enumerate(reversed(segments)) if a < endTime)
+            segments[i+1:] = []
+        except StopIteration:
+            pass
         endTime = min(segments[-1][1], endTime)
         print 'end time:', endTime
         segments[-1] = (segments[-1][0], endTime)
@@ -80,6 +85,7 @@ def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_
         print "Creating layer '%s'" % layerName
         layer = ts.add_layer(layerName)
 
+    pos = segments[0][0]
     for seg in segments:
         pos = max(pos, seg[0])
         while pos < seg[1]:
@@ -103,14 +109,11 @@ def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_
             l = _length(clip)
 
             if l > threshold:
-                #print '+', l, (startTime, endTime) # DEBUG
-                sys.stdout.write('+ %f (%d, %d)' % (l, startTime, endTime))
+                print '+ %f (%d, %d)' % (l, startTime, endTime)
                 sys.stdout.flush()
-
                 layer.insert_annotation('Possible seizure', start=startTime, end=endTime)
             else:
-                #print '-', l, (startTime, endTime) # DEBUG
-                sys.stdout.write('- %f (%d, %d)' % (l, startTime, endTime))
+                print '- %f (%d, %d)' % (l, startTime, endTime)
                 sys.stdout.flush()
 
             pos += LL_CLIP_LENGTH
@@ -129,7 +132,6 @@ def _length(clip):
     length = np.median(lengths) / clip.shape[1] 
     return length
 
-
 if __name__ == '__main__':
     ptName = sys.argv[1]
     bf = Blackfynn()
@@ -137,13 +139,15 @@ if __name__ == '__main__':
     ch = CHANNELS.get(ptName, None)
 
     try:
-        startTime = sys.argv[2]
-    except IndexError:
+        startTime = int(sys.argv[2])
+    except IndexError, ValueError:
         startTime = None
 
     try:
-        append = (sys.argv[3] == 'append')
-    except IndexError:
-        append = False
+        endTime = int(sys.argv[3])
+    except IndexError, ValueError:
+        endTime = None
 
-    lineLength(ts, ch, startTime, append)
+    append = ('append' in sys.argv[1:])
+
+    lineLength(ts, ch, startTime, endTime=None, append=append)

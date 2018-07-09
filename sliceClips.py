@@ -18,7 +18,7 @@ import scipy.io as sio
 
 def sliceClips(clipDir, segType, fs, ptName):
     '''
-    Slice a clip from patient ptName and save it inside ./seizure-data/
+    Slice a clip from patient ptName into 1sec segments and save them.
     Returns: The number of segments successfully saved
 
     clipDir: folder containing clips
@@ -99,7 +99,7 @@ def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType):
         }
         if segType == 'ictal': matData['latency'] = i
 
-        sio.savemat('seizure-data/{0}/{0}_{1}_segment_{2}.mat'.format(
+        sio.savemat('pipeline-data/seizure-data/{0}/{0}_{1}_segment_{2}.mat'.format(
                     ptName, segType, i+1 + segTotal - nanSkips), matData)
 
         # Go to the next segment
@@ -115,6 +115,6 @@ if __name__ == '__main__':
 
     clipDir = os.path.join(clipRoot, ptName)
     makeDir(clipDir)
-    makeDir('seizure-data/' + ptName)
+    makeDir('pipeline-data/seizure-data/' + ptName)
 
     sliceClips(clipDir, segType, fs, ptName)

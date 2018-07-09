@@ -10,7 +10,7 @@ import sys
 
 from blackfynn import Blackfynn
 
-from settings import TIME_BUFFER, DATA_RATIO
+from settings import DATA_RATIO, PL_ROOT, TIME_BUFFER
 
 def makeAnnotFile(annotations, filename):
     '''
@@ -97,5 +97,5 @@ if __name__ == '__main__':
     
     ictals = getIctalAnnots(layer)
     interictals = getInterictalAnnots(ictals, segs) 
-    makeAnnotFile(ictals, 'annotations/%s_annotations.txt' % ptName)
-    makeAnnotFile(interictals, 'annotations/%s_interictal_annotations.txt' % ptName)
+    makeAnnotFile(ictals, PL_ROOT + '/annotations/%s_annotations.txt' % ptName)
+    makeAnnotFile(interictals, PL_ROOT + '/annotations/%s_interictal_annotations.txt' % ptName)

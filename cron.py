@@ -8,12 +8,16 @@ python cron.py linelength|pipeline
 The "linelength" option uses the line length detector,
 while the "pipeline" option uses the pipeline and liveAlgo classifier.
 '''
-import time
+import json
 import sys
+import time
+
+# Workaround for occasional blackfynn server errors:
+from requests.exceptions import RequestException
 
 import schedule
 
-from settings import DETECTION_INTERVAL
+from settings import DETECTION_INTERVAL, LIVE_UPDATE_TIMES
 from tools import timeString
 import liveDetect
 import datetime as DT
@@ -30,25 +34,34 @@ if algo == 'pipeline':
 elif algo == 'linelength':
     print '=== Using line length detector ==='
 else:
-    raise ValueError("Invalid algo option '%s'" % algo)
+    raise ValueError("Invalid classifier option '%s'" % algo)
 
-def getTime():
-    'Get the current time, in usecs'
-    t = DT.datetime.utcnow() - DT.timedelta(minutes=DETECTION_INTERVAL)
-    t = (t - EPOCH).total_seconds() * 1000000
-    return t
-    
+with open(LIVE_UPDATE_TIMES, 'r') as f:
+    lastUpdated = json.load(f)
+
 def detectJob():
-    print '=== Running %s classifier at time %s ===' % (algo, timeString(detectJob.startTime))
-    detectJob.startTime = liveDetect.detect(bf, detectJob.startTime, algo)
+    global lastUpdated
+    startTime = lastUpdated[algo]
+    print '=== Running %s classifier from %s UTC ===' % (algo, timeString(startTime))
+    try:
+        endTime = liveDetect.detect(bf, startTime, algo)
+        lastUpdated[algo] = endTime
+        print '=== Up to date as of', timeString(endTime), '==='
+    except RequestException as e:
+        print '=== Error running classifier ==='
+        print e
     sys.stdout.flush() # make sure all print statements are outputted by this point
-    print '=== Up to date as of', timeString(detectJob.startTime), '==='
-
-detectJob.startTime = getTime() - DETECTION_INTERVAL * 60000000
+    with open(LIVE_UPDATE_TIMES, 'w') as f:
+        json.dump(lastUpdated, f)
 
 def diaryJob():
     print '=== Updating seizure diaries ==='
-    liveDetect.diary(bf)
+    try:
+        liveDetect.diary(bf, algo)
+        print '=== Seizure diaries are up to date ==='
+    except Exception as e:
+        print '=== Error updating diary ==='
+        print e
     sys.stdout.flush() # make sure all print statements are outputted by this point
 
 schedule.every(DETECTION_INTERVAL).minutes.do(detectJob)

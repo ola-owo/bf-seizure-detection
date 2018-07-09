@@ -47,6 +47,15 @@ class NoPrint:
         self._devnull.close()
 
 def timeString(epoch_usecs):
-    'Returns (example): "Thu Sep 13 02:22:50 2012 UTC (1347517370)"'
+    '''
+    Returns the current time, in UTC
+    example: "Sep 13 2012 02:22:50 UTC (1347517370)"
+    '''
     epoch_secs = epoch_usecs / 1000000.
-    return DT.datetime.fromtimestamp(epoch_secs).strftime('%c UTC ') + '(unix time %d)' % epoch_usecs
+    return DT.datetime.utcfromtimestamp(epoch_secs).strftime('%b %d %Y %X') + ' UTC (%d)' % epoch_usecs
+
+def getTime():
+    'Get the current time, in usecs'
+    t = DT.datetime.utcnow() - DT.timedelta(minutes=DETECTION_INTERVAL)
+    t = (t - EPOCH).total_seconds() * 1000000
+    return t
