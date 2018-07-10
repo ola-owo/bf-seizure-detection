@@ -140,12 +140,12 @@ if __name__ == '__main__':
 
     try:
         startTime = int(sys.argv[2])
-    except IndexError, ValueError:
+    except (IndexError, ValueError):
         startTime = None
 
     try:
         endTime = int(sys.argv[3])
-    except IndexError, ValueError:
+    except (IndexError, ValueError):
         endTime = None
 
     append = ('append' in sys.argv[2:])

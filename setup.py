@@ -18,4 +18,13 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: POSIX :: Linux",
     ),
+    install_requires=[
+        "blackfynn",
+        "hickle",
+        "matplotlib",
+        "numpy",
+        "schedule",
+        "scikit-learn",
+        "scipy",
+    ]
 )

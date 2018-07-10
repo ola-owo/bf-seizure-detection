@@ -7,6 +7,8 @@ from settings import TS_IDs, LL_LAYER_NAME
 
 bf = Blackfynn()
 
+### Re-add annotations to database
+# 
 #conn = sqlite3.connect('live/diaries.db')
 #c = conn.cursor()
 

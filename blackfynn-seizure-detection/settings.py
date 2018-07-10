@@ -18,13 +18,13 @@ TS_IDs = {
     'UCD2': 'N:package:86985e61-c940-4404-afa7-94d0add8333f',
 
     #'D_650': 'N:package:97b17a5b-6c56-4bb0-9d4d-b0b522d96c51',
+    #'Tanner': 'N:package:224539b5-c15b-419c-aeee-d087e16bd475',
     'Gus': 'N:package:cb8231c7-5b8b-4baf-be00-5658133b4d16',
     'Joseph': 'N:package:3768b47c-5ded-4cf9-9bda-dc32f4520b40',
     'T_488': 'N:package:7d49ad78-26a8-4726-b253-cf70a237ec42',
     'T_537': 'N:package:a48ffe55-be70-4fb6-af79-129bf8de2623',
     'T_571': 'N:package:666bcf72-ce45-46b2-9238-3ac1fa0403bd',
     'T_608': 'N:package:40da8a12-9f71-48a1-82f4-8c34ecbe0e14',
-    #'Tanner': 'N:package:224539b5-c15b-419c-aeee-d087e16bd475',
 }
 
 CHANNELS = {
@@ -104,6 +104,14 @@ THRESHOLDS = {
     'Ripley': 16,
     'UCD1': 10000,
     'UCD2': 10000,
+
+    # TODO: change these values
+    'Gus': 1000000,
+    'Joseph': 1000000,
+    'T_488':  1000000,
+    'T_537':  1000000,
+    'T_571':  1000000,
+    'T_608':  1000000,
 }
 
 #################################################

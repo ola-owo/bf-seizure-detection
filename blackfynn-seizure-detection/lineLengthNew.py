@@ -97,9 +97,9 @@ def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_
         # Calculate trend and threshold
         windowEnd = min(windowEnd, endTime)
         try:
-            # Workaround in case of server errors
             trend, shortClips = _trend(ts, windowStart, windowEnd)
         except RequestException:
+            # Workaround in case of server errors
             sleep(2)
             continue
         if trend is None:
@@ -143,6 +143,7 @@ def _trend(ts, windowStart, windowEnd):
     # Get time segments within the long-term window
     windowSegs = ts.segments(windowStart, windowEnd)
     if not windowSegs:
+        print 'No data within the window.'
         return None, []
     _trimStart(windowStart, windowSegs)
     _trimEnd(windowEnd, windowSegs)
@@ -158,7 +159,7 @@ def _trend(ts, windowStart, windowEnd):
                 # note: actual clip length may be shorter than LL_CLIP_LENGTH
             except RequestException as e:
                 # catch Blackfynn server errors
-                print 'Server Error (will retry):', e
+                print 'Server error (will retry):', e
                 sleep(2)
                 continue
             except Exception as e:
@@ -189,7 +190,7 @@ def _trend(ts, windowStart, windowEnd):
 
     # Calculate trend and threshold; annotate
     if not shortClips:
-        print 'TREND: None' # DEBUG
+        print 'No clips could be created within the window.'
         return None, []
     trend = np.mean([clip['length'] for clip in shortClips])
     print 'TREND:', trend # DEBUG
@@ -244,12 +245,12 @@ if __name__ == '__main__':
 
     try:
         startTime = int(sys.argv[2])
-    except IndexError, ValueError:
+    except (IndexError, ValueError):
         startTime = None
 
     try:
         endTime = int(sys.argv[3])
-    except IndexError, ValueError:
+    except (IndexError, ValueError):
         endTime = None
 
     append = ('append' in sys.argv[2:])

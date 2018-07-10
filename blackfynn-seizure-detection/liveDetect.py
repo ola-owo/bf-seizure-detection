@@ -127,21 +127,21 @@ def diary(bf, algo):
         ## auto-detected seizures:
         fig, ax = plt.subplots(1)
         seizures = np.array(seizures)
-        _plot(ax, seizures, 1.0, 'Auto-detected seizures', 'b')
+        _plot(ax, seizures, 0.7, 'Auto-detected seizures', 'b')
 
         ## gold standard seizures (if any):
         layerID = GOLD_STD_LAYERS.get(ptName, None)
         if layerID is not None:
             layer = ts.get_layer(layerID)
             goldSeizures = np.array([(a.start, a.end) for a in layer.annotations()])
-            _plot(ax, goldSeizures, 0.7, 'Gold standard seizures', 'g')
+            _plot(ax, goldSeizures, 0.3, 'Gold standard seizures', 'g')
 
         ax.xaxis.set_major_formatter(DateFormatter('%b %d %y %H:%M'))
         ax.yaxis.set_ticks(())
         ax.grid()
         ax.legend()
         fig.autofmt_xdate()
-        plt.ylim(0.0, 1.5)
+        plt.ylim(0.0, 1.0)
         plt.title('Seizure diary for ' + ptName)
 
         # Save plot
