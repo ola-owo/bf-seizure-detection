@@ -42,7 +42,7 @@ with open(LIVE_UPDATE_TIMES, 'r') as f:
 def detectJob():
     global lastUpdated
     startTime = lastUpdated[algo]
-    print '=== Running %s classifier from %s UTC ===' % (algo, timeString(startTime))
+    print '=== Running %s classifier from %s ===' % (algo, timeString(startTime))
     try:
         endTime = liveDetect.detect(bf, startTime, algo)
         lastUpdated[algo] = endTime

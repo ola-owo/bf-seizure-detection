@@ -13,13 +13,15 @@ from blackfynn import Blackfynn
 from requests.exceptions import RequestException
 
 from settings import (
-    CHANNELS, LL_LAYER_NAME, TS_IDs
+    CHANNELS, TS_IDs
 )
 
 # TODO: move these variables to settings.py
+FREQ = 250
+LL_LAYER_NAME = 'UPenn_New_LL_Detector'
 LL_CLIP_LENGTH = 60000000
 LONG_WINDOW_LENGTH = 28800000000 # 8 hours
-#LONG_WINDOW_LENGTH = 900000000 # 15 minutes # DEBUG (should be several hours)
+#LONG_WINDOW_LENGTH = 900000000 # 15 minutes (DEBUG)
 THRESHOLDS = {
     # scaling factors relative to mean, instead of absolute values
     'R_950': 2.0,
@@ -27,6 +29,13 @@ THRESHOLDS = {
     'Ripley': 2.0,
     'UCD1': 3.0,
     'UCD2': 3.0,
+
+    'Gus': 3.0,
+    'Joseph': 3.0,
+    'T_488': 3.0,
+    'T_537': 3.0,
+    'T_571': 3.0,
+    'T_608': 3.0,
 }
 
 def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_LAYER_NAME):
@@ -61,17 +70,17 @@ def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_
             return
 
     # Get/create annotation layer
-    #try:
-    #    layer = ts.get_layer(layerName)
-    #    if append:
-    #        print "Appending to layer '%s'" % layerName
-    #    else:
-    #        print "Overwriting layer '%s'" % layerName
-    #        layer.delete()
-    #        layer = ts.add_layer(layerName)
-    #except:
-    #    print "Creating layer '%s'" % layerName
-    #    layer = ts.add_layer(layerName)
+    try:
+        layer = ts.get_layer(layerName)
+        if append:
+            print "Appending to layer '%s'" % layerName
+        else:
+            print "Overwriting layer '%s'" % layerName
+            layer.delete()
+            layer = ts.add_layer(layerName)
+    except:
+        print "Creating layer '%s'" % layerName
+        layer = ts.add_layer(layerName)
 
     # Find the long-term windows to start and end from
     windowStart = ts.start
@@ -117,7 +126,7 @@ def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_
             l = clip['length']
             if l > threshold:
                 print '+ %f (%d, %d)' % (l, clip['start'], clip['end'])
-                #layer.insert_annotation('Possible seizure', start=clip['start'], end=clip['end']) # DEBUG
+                layer.insert_annotation('Possible seizure', start=clip['start'], end=clip['end']) # DEBUG
             else:
                 print '- %f (%d, %d)' % (l, clip['start'], clip['end'])
             sys.stdout.flush()
@@ -147,11 +156,21 @@ def _trend(ts, windowStart, windowEnd):
                 clip = ts.get_data(start=pos, length=LL_CLIP_LENGTH, channels=ch, use_cache=False)
                 # caching disabled to prevent database disk image errors
                 # note: actual clip length may be shorter than LL_CLIP_LENGTH
+            except RequestException as e:
+                # catch Blackfynn server errors
+                print 'Server Error (will retry):', e
+                sleep(2)
+                continue
             except Exception as e:
                 print 'Pull failed:', e
                 pos += LL_CLIP_LENGTH
                 continue
-            if clip.empty:
+            if clip.empty or clip.isnull().all().any():
+                # skip clip if a channel is missing data 
+                pos += LL_CLIP_LENGTH
+                continue
+            if clip.shape[0] / FREQ * 1000000 < LL_CLIP_LENGTH / 2:
+                # skip clip if it's less than half of max clip length
                 pos += LL_CLIP_LENGTH
                 continue
 
@@ -233,6 +252,6 @@ if __name__ == '__main__':
     except IndexError, ValueError:
         endTime = None
 
-    append = ('append' in sys.argv[1:])
+    append = ('append' in sys.argv[2:])
 
     lineLength(ts, ch, startTime, endTime=None, append=append)

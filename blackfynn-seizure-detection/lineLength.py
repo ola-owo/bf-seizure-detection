@@ -148,6 +148,6 @@ if __name__ == '__main__':
     except IndexError, ValueError:
         endTime = None
 
-    append = ('append' in sys.argv[1:])
+    append = ('append' in sys.argv[2:])
 
     lineLength(ts, ch, startTime, endTime=None, append=append)

@@ -124,25 +124,24 @@ def diary(bf, algo):
             print 'No seizures to plot.'
             continue
 
-        fig, ax = plt.subplots(1)
-
         ## auto-detected seizures:
+        fig, ax = plt.subplots(1)
         seizures = np.array(seizures)
-        _plot(ax, seizures, 'Auto-detected seizures', 'b')
+        _plot(ax, seizures, 1.0, 'Auto-detected seizures', 'b')
 
         ## gold standard seizures (if any):
         layerID = GOLD_STD_LAYERS.get(ptName, None)
         if layerID is not None:
             layer = ts.get_layer(layerID)
             goldSeizures = np.array([(a.start, a.end) for a in layer.annotations()])
-            _plot(ax, goldSeizures, 'Gold standard seizures', 'g')
+            _plot(ax, goldSeizures, 0.7, 'Gold standard seizures', 'g')
 
         ax.xaxis.set_major_formatter(DateFormatter('%b %d %y %H:%M'))
         ax.yaxis.set_ticks(())
         ax.grid()
         ax.legend()
         fig.autofmt_xdate()
-        plt.ylim(0.5, 1.5)
+        plt.ylim(0.0, 1.5)
         plt.title('Seizure diary for ' + ptName)
 
         # Save plot
@@ -154,12 +153,12 @@ def diary(bf, algo):
  
     conn.close()
 
-def _plot(ax, seizures, label, color):
+def _plot(ax, seizures, height, label, color):
     'Helper function for diary()'
     convertTime = lambda x: date2num(dt.datetime.utcfromtimestamp(x / 1000000))
     startTimes = map(convertTime, seizures[:,0]) # convert to matplotlib time format:
     endTimes = map(convertTime, seizures[:,1])
-    y = np.ones(seizures.shape[0])
+    y = np.full_like(seizures.shape[0], height, dtype='float64')
 
     ax.vlines(startTimes, y-0.1, y+0.1, colors=color)
     ax.vlines(endTimes, y-0.1, y+0.1, colors=color)

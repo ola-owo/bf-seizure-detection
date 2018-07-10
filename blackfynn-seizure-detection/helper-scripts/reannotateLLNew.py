@@ -1,7 +1,8 @@
-'''
-Re-annotate line length detector using a different threshold
 
-Usage: python reannotateLL.py ptName logfile layerID threshold
+'''
+Annotate new line length detector from an output log
+
+Usage: python reannotateLL.py ptName logfile layerID
 '''
 
 import sys
@@ -18,7 +19,6 @@ TS_IDs = {
 ptName = sys.argv[1]
 logfile = sys.argv[2]
 layerID = int(sys.argv[3])
-thresh = float(sys.argv[4])
 
 tsID = TS_IDs[ptName]
 bf = Blackfynn()
@@ -30,10 +30,10 @@ layer = ts.add_layer(layerName)
 
 with open(logfile, 'rU') as f:
     for line in f.readlines():
-        if line[0] not in '+-': continue
         spl = line.strip().split()
-        length = float(spl[1])
+        if len(spl) != 4 or spl[0] not in '+-' : continue
+        positive = (spl[0] == '+')
         startTime = int(spl[2].lstrip('(').rstrip(','))
         endTime = int(spl[3].rstrip(')'))
 
-        if length > thresh: layer.insert_annotation('Possible seizure', start=startTime, end=endTime)
+        if positive: layer.insert_annotation('Possible seizure', start=startTime, end=endTime)

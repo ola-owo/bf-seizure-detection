@@ -51,9 +51,9 @@ def isIctal(start, end):
     e = 0
     clipLength = end - start
     for ictal in ictals:
-        # check if at least half of the seizure is contained in the clip
+        # check if any part of the clip contains a seizure
         ictalLength = ictal[1] - ictal[0]
-        if min(end, ictal[1]) - max(start, ictal[0]) >= ictalLength / 2:
+        if min(end, ictal[1]) - max(start, ictal[0]) > 0:
             s = 1
             if start - ictal[0] < 15000000: e = 1
             break
