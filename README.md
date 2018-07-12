@@ -1,12 +1,12 @@
 # blackfynn-seizure-detection
 Before running anything, make sure all of the correct settings and patient-specific data are set in `settings.py`.
 
-This pipeline provides automated seizure detection of EEG data that is hosted on Blackfynn. It is adapted from an [old pipeline](https://github.com/sbaldassano/blackfynnPipeline) that was made for Blackfynn's Matlab API.
+This pipeline provides automated seizure detection of EEG data that is hosted on Blackfynn. It is adapted from an [old pipeline](https://github.com/sbaldassano/blackfynnPipeline) that was made for a previous version of the Blackfynn API.
 
-Two seizure detectors are included: a random forest classifier and a line length detector. `pipeline.py` and `lineLength.py` can be run to use either of these classifiers to predict seizures along an entire EEG TimeSeries. In addition, `cron.py` can be used for real-time seizure detection.
+Two seizure detectors are included: a random forest classifier and a line length detector. `pipeline.py` and `lineLength.py` can be run to use either of these classifiers to predict seizures along an entire TimeSeries. In addition, `cron.py` can be used for real-time seizure detection.
 
 ## Random Forest Classifier
-Usage: `pipeline.py ptName [annotate [startTime [endTime]]`
+Usage: `pipeline.py ptName [annotate [startTime [endTime]]]`
 
 `pipeline.py` automatically downloads clips from patient `ptName` and trains the classifier<sup>[1](#note-1)</sup> (stored in `liveAlgo/`). If `annotate` is specified, the script tests the TimeSeries for seizures between `startTime` and `endTime`.
 
@@ -29,6 +29,11 @@ Usage: `cron.py linelength|pipeline`
 Real time seizure detection can be done using either the line length detector or the random forest.`cron.py` will, at a specified time interval, check for new EEG data and search it for possible seizures.
 
 `cron.py` will also automatically maintain seizure diaries, displaying each patient's history of human-annotated and auto-detected seizures.
+
+## Helper Scripts
+The `helper-scripts` folder contains several small scripts for automating various tasks.
+
+***TODO** - document each script*
 
 ## Notes
 <b name="note-1">1.</b> The classifier was created by Michael Hills for a Kaggle contest and is hosted separately [here](https://github.com/MichaelHills/seizure-detection).
