@@ -24,8 +24,8 @@ from annots import *
 from pullClips import pullClips
 from sliceClips import sliceClips
 from settings import (
-    CHANNELS,
-    FREQ, GOLD_STD_LAYERS, PL_LAYER_NAME, PL_ROOT, TRAINING_SZ_LIMIT, TS_IDs
+    CHANNELS, DEFAULT_FREQ, FREQS, GOLD_STD_LAYERS, PL_LAYER_NAME, PL_ROOT,
+    TRAINING_SZ_LIMIT, TS_IDs
 )
 from testTimeSeries import testTimeSeries
 from train import train
@@ -40,9 +40,10 @@ def pipeline(ptName, annotating=True, startTime=None, endTime=None, bf=None):
     layer = ts.get_layer(GOLD_STD_LAYERS[ptName])
     layerName = layer.name
     ch = CHANNELS.get(ptName, None)
+    freq = FREQS.get(ptName, DEFAULT_FREQ)
 
     ### Pull ictal and interictal annotation times
-    print "Pulling annotations from layer '%s'..." % layerName
+    print "Reading annotations from layer '%s'..." % layerName
     annotDir = PL_ROOT + '/annotations'
     makeDir(annotDir)
     ictals = getIctalAnnots(layer)
@@ -120,19 +121,15 @@ if __name__ == '__main__':
 
     ptName = sys.argv[1]
 
-    if num_args >= 2:
-        annotating = (sys.argv[2] == 'annotate')
-    else:
-        annotating = False
-
-    if num_args >= 3:
-        startTime = int(sys.argv[3])
-    else:
+    try:
+        startTime = int(sys.argv[2])
+    except (IndexError, ValueError):
         startTime = None
 
-    if num_args >= 4:
-        endTime = int(sys.argv[4])
-    else:
+    try:
+        endTime = int(sys.argv[3])
+    except (IndexError, ValueError):
         endTime = None
 
+    annotating = ('annotate' in sys.argv[2:])
     pipeline(ptName, annotating, startTime, endTime)

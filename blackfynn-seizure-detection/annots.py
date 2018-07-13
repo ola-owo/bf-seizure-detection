@@ -1,7 +1,7 @@
 '''
 Generates annotation files from a given annotation layer.
 This script can also be called standalone with:
-> python makeAnnonationFile.py ptName timeseriesID layerID
+> python makeAnnonationFile.py ptName [layerID]
 '''
 
 import os
@@ -10,7 +10,7 @@ import sys
 
 from blackfynn import Blackfynn
 
-from settings import DATA_RATIO, PL_ROOT, TIME_BUFFER
+from settings import DATA_RATIO, GOLD_STD_LAYERS, PL_ROOT, TIME_BUFFER, TS_IDs
 
 def makeAnnotFile(annotations, filename):
     '''
@@ -81,14 +81,24 @@ def getInterictalAnnots(ictals, segments):
     for inter in interictalsCopy:
         interictals.append(inter)
         totalInterTime += (inter[1] - inter[0])
-        if totalInterTime / totalIctalTime >= DATA_RATIO: break
+        if totalInterTime / totalIctalTime >= DATA_RATIO:
+            diff = totalInterTime % totalIctalTime
+            interictals[-1] = (inter[0], inter[1] - diff)
+            totalInterTime -= diff
+            break
 
+    print 'total ictal time:', totalIctalTime
+    print 'total interictal:', totalInterTime
     return interictals
 
 if __name__ == '__main__':
     ptName = sys.argv[1]
-    tsID = sys.argv[2]
-    layerID = int(sys.argv[3])
+    tsID = TS_IDs[ptName]
+
+    if len(sys.argv) >= 3:
+        layerID = int(sys.argv[2])
+    else:
+        layerID = GOLD_STD_LAYERS[ptName]
 
     bf = Blackfynn()
     ts = bf.get(tsID)

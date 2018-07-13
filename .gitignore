@@ -3,14 +3,9 @@
 *~
 *.py[cdo]
 
-# Used by liveAlgo
-seizure-data/
-data-cache/
-submissions/
-
-# Other files for my project
-tests/
-blackfynnPipeline.zip
+# Data folders
+live/
+pipeline-data/
 
 # Used by liveDetect
 diaries.db

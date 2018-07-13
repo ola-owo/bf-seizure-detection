@@ -10,22 +10,21 @@ import numpy as np
 from blackfynn import Blackfynn
 
 from settings import (
-    CHANNELS, LL_CLIP_LENGTH, LL_LAYER_NAME, THRESHOLDS, TS_IDs,
+    CHANNELS, LL_CLIP_LENGTH, LL_LAYER_NAME, LL_THRESHOLDS, TS_IDs,
 )
 
-def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_LAYER_NAME):
+def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName=LL_LAYER_NAME):
     '''
     Runs the line length detector.
 
-    ts: TimeSeries object to annotate
     ch: channels to annotate
     startTime: time (usec) to start from. Default value (None) starts from the beginning of the timeseries
     append: Whether to append or overwrite the line length annotation layer
     layerName: name of layer to write to
     '''
 
-    ptName = ts.name
-    threshold = THRESHOLDS[ptName]
+    ts = TS_IDs[ptName]
+    threshold = LL_THRESHOLDS[ptName]
     segments = ts.segments()
 
     # Make sure startTime and endTime are valid
@@ -135,7 +134,6 @@ def _length(clip):
 if __name__ == '__main__':
     ptName = sys.argv[1]
     bf = Blackfynn()
-    ts = bf.get(TS_IDs[ptName])
     ch = CHANNELS.get(ptName, None)
 
     try:
@@ -150,4 +148,4 @@ if __name__ == '__main__':
 
     append = ('append' in sys.argv[2:])
 
-    lineLength(ts, ch, startTime, endTime=None, append=append)
+    lineLength(ptName, ch, startTime, endTime=None, append=append)

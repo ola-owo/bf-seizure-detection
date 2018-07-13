@@ -13,44 +13,26 @@ from blackfynn import Blackfynn
 from requests.exceptions import RequestException
 
 from settings import (
-    CHANNELS, TS_IDs
+    CHANNELS, DEFAULT_FREQ, FREQS, LL_LONG_WINDOW_DEFAULT,
+    LL_SHORT_WINDOW_DEFAULT, LL_LONG_WINDOWS, LL_SHORT_WINDOWS, LL_NEW_THRESHOLDS,
+    TS_IDs
 )
 
-# TODO: move these variables to settings.py
-FREQ = 250
-LL_LAYER_NAME = 'UPenn_New_LL_Detector'
-LL_CLIP_LENGTH = 60000000
-LONG_WINDOW_LENGTH = 28800000000 # 8 hours
-#LONG_WINDOW_LENGTH = 900000000 # 15 minutes (DEBUG)
-THRESHOLDS = {
-    # scaling factors relative to mean, instead of absolute values
-    'R_950': 2.0,
-    'R_951': 2.0,
-    'Ripley': 2.0,
-    'UCD1': 3.0,
-    'UCD2': 3.0,
-
-    'Gus': 3.0,
-    'Joseph': 3.0,
-    'T_488': 3.0,
-    'T_537': 3.0,
-    'T_571': 3.0,
-    'T_608': 3.0,
-}
-
-def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_LAYER_NAME):
+def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName=LL_NEW_LAYER_NAME):
     '''
     Runs the line length detector.
 
-    ts: TimeSeries object to annotate
     ch: channels to annotate
     startTime: time (usec) to start from. Default value (None) starts from the beginning
     append: Whether to append to (or otherwise overwrite) the line length annotation layer
     layerName: name of layer to write to
     '''
 
-    ptName = ts.name
+    ts = TS_IDs[ptName]
+    freq = FREQS.get(ptName, DEFAULT_FREQ)
     segments = ts.segments()
+    longWindow = LL_LONG_WINDOWS.get(ptName, LL_LONG_WINDOW_DEFAULT)
+    shortWindow = LL_SHORT_WINDOWS.get(ptName, LL_SHORT_WINDOW_DEFAULT)
 
     # Make sure startTime and endTime are valid
     if startTime is not None:
@@ -84,11 +66,11 @@ def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_
 
     # Find the long-term windows to start and end from
     windowStart = ts.start
-    windowEnd = windowStart + LONG_WINDOW_LENGTH
+    windowEnd = windowStart + longWindow
     if startTime:
         while windowEnd < startTime:
             windowStart = windowEnd
-            windowEnd += LONG_WINDOW_LENGTH
+            windowEnd += longWindow
     if not endTime:
         endTime = ts.end
 
@@ -106,7 +88,7 @@ def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_
             print 'skipping long window (no clips)...' # DEBUG
             sys.stdout.flush() # DEBUG
             windowStart = windowEnd
-            windowEnd += LONG_WINDOW_LENGTH
+            windowEnd += longWindow
             continue
 
         # If using a custom start time, trim shortClips
@@ -121,7 +103,7 @@ def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_
             startTime = None
 
         # Annotate and/or print predictions
-        threshold = THRESHOLDS[ptName] * trend
+        threshold = LL_NEW_THRESHOLDS[ptName] * trend
         for clip in shortClips:
             l = clip['length']
             if l > threshold:
@@ -133,7 +115,7 @@ def lineLength(ts, ch, startTime=None, endTime=None, append=False, layerName=LL_
 
         # Go to next long term window
         windowStart = windowEnd
-        windowEnd += LONG_WINDOW_LENGTH
+        windowEnd += longWindow
 
 def _trend(ts, windowStart, windowEnd):
     'Returns: trend value, list of clips with their line lengths'
@@ -154,9 +136,9 @@ def _trend(ts, windowStart, windowEnd):
         pos = max(pos, seg[0])
         while pos < seg[1]:
             try:
-                clip = ts.get_data(start=pos, length=LL_CLIP_LENGTH, channels=ch, use_cache=False)
+                clip = ts.get_data(start=pos, length=shortWindow, channels=ch, use_cache=False)
                 # caching disabled to prevent database disk image errors
-                # note: actual clip length may be shorter than LL_CLIP_LENGTH
+                # note: actual clip length may be shorter than the short window length
             except RequestException as e:
                 # catch Blackfynn server errors
                 print 'Server error (will retry):', e
@@ -164,15 +146,15 @@ def _trend(ts, windowStart, windowEnd):
                 continue
             except Exception as e:
                 print 'Pull failed:', e
-                pos += LL_CLIP_LENGTH
+                pos += shortWindow
                 continue
             if clip.empty or clip.isnull().all().any():
                 # skip clip if a channel is missing data 
-                pos += LL_CLIP_LENGTH
+                pos += shortWindow
                 continue
-            if clip.shape[0] / FREQ * 1000000 < LL_CLIP_LENGTH / 2:
+            if clip.shape[0] / freq * 1000000 < shortWindow / 2:
                 # skip clip if it's less than half of max clip length
-                pos += LL_CLIP_LENGTH
+                pos += shortWindow
                 continue
 
             clipStart = clip.iloc[0].name.value / 1000 # convert to Unix epoch time, in usecs
@@ -186,7 +168,7 @@ def _trend(ts, windowStart, windowEnd):
                 'end': clipEnd,
                 'length': l
             })
-            pos += LL_CLIP_LENGTH
+            pos += shortWindow
 
     # Calculate trend and threshold; annotate
     if not shortClips:
@@ -211,6 +193,7 @@ def _length(clip):
     return length
 
 def _trimStart(startTime, segments):
+    'trim segments list so it starts at or after startTime'
     if startTime is None:
         startTime = segments[0][0]
     else:
@@ -224,6 +207,7 @@ def _trimStart(startTime, segments):
     return startTime
 
 def _trimEnd(endTime, segments):
+    'trim segments list so it ends at or before endTime'
     if endTime is None:
         endTime = segments[-1][1]
     else:
@@ -240,7 +224,6 @@ def _trimEnd(endTime, segments):
 if __name__ == '__main__':
     ptName = sys.argv[1]
     bf = Blackfynn()
-    ts = bf.get(TS_IDs[ptName])
     ch = CHANNELS.get(ptName, None)
 
     try:
@@ -255,4 +238,4 @@ if __name__ == '__main__':
 
     append = ('append' in sys.argv[2:])
 
-    lineLength(ts, ch, startTime, endTime=None, append=append)
+    lineLength(ptName, ch, startTime, endTime=None, append=append)

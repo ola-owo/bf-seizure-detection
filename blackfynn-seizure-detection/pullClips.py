@@ -94,7 +94,7 @@ if __name__ == '__main__':
     outDir = sys.argv[4].rstrip('/')
 
     try:
-        limit = sys.argv[5]
+        limit = int(sys.argv[5])
     except IndexError:
         limit = None
 

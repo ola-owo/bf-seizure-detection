@@ -7,7 +7,11 @@ File and folder names can also be customized here.
 #############################
 ### PATIENT-SPECIFIC INFO ###
 #############################
-FREQ = 250 # frequency (hz) of each timeseries
+DEFAULT_FREQ = 250 # frequency (hz) of each timeseries
+FREQs = {
+    # Specify the frequency of each patient's timeseries if it's different
+    # from the default:
+}
 
 TS_IDs = { 
     # ID of each patient's timeseries
@@ -97,9 +101,11 @@ PL_CLIP_LENGTH = 30000000 # length (usec) of each clip to test
 #####################################
 ### LINE LENGTH DETECTOR SETTINGS ###
 #####################################
+
+# Old LL Detector:
 LL_CLIP_LENGTH = 60000000 #  length (usec) of each clip to test
-THRESHOLDS = {
-    'R_950': 15,
+LL_THRESHOLDS = {
+    'R_950': 20,
     'R_951': 15,
     'Ripley': 16,
     'UCD1': 10000,
@@ -114,6 +120,33 @@ THRESHOLDS = {
     'T_608':  1000000,
 }
 
+# New LL Detector:
+LL_LONG_WINDOW_DEFAULT = 28800000000 # default value (usec)
+LL_SHORT_WINDOW_DEFAULT = 60000000 # default value (usec)
+
+LL_LONG_WINDOWS = {
+    # Specify custom long-term window lengths
+}
+LL_SHORT_WINDOWS = {
+    # Specify custom short-term window lengths
+}
+
+LL_NEW_THRESHOLDS = {
+    # scaling factors relative to mean, instead of absolute values
+    'R_950': 2.0,
+    'R_951': 2.0,
+    'Ripley': 2.0,
+    'UCD1': 3.0,
+    'UCD2': 3.0,
+
+    'Gus': 3.0,
+    'Joseph': 3.0,
+    'T_488': 3.0,
+    'T_537': 3.0,
+    'T_571': 3.0,
+    'T_608': 3.0,
+}
+
 #################################################
 ### LIVE DETECTION AND SEIZURE DIARY SETTINGS ###
 #################################################
@@ -123,7 +156,7 @@ DETECTION_INTERVAL = 30 # minutes
 ### Misc variable names ###
 ###########################
 # pipeline:
-PL_ROOT = 'pipeline-data' # folder to store temporary pipeline data
+PL_ROOT = 'pipeline-data' # folder for temporary pipeline data
 PL_LAYER_NAME = 'UPenn_Seizure_Detections'
 
 # cron:
@@ -135,3 +168,6 @@ DIARY_DB_NAME = 'live/diaries.db'
 
 # lineLength:
 LL_LAYER_NAME = 'UPenn_Line_Length_Detector'
+
+# lineLengthNew:
+LL_NEW_LAYER_NAME = 'UPenn_New_LL_Detector'

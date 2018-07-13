@@ -51,13 +51,14 @@ def detect(bf, startTime, algo):
         print 'Testing patient', ptName
         try:
             ts = bf.get(TS_IDs[ptName])
-        except Exception as e: # should probably make this more specific
-            print 'Error getting timeseries from Blackfynn:', e
+        except Exception as e: # TODO: should probably make this more specific
+            print "Error getting timeseries for patient '" + ptName + "':"
+            print e
             continue
         ch = CHANNELS.get(ptName, None)
 
         if algo == 'linelength':
-            lineLength(ts, ch, startTime, endTime, append=True, layerName=LL_LAYER_NAME)
+            lineLength(ptName, ch, startTime, endTime, append=True, layerName=LL_LAYER_NAME)
         elif algo == 'pipeline':
             # Train liveAlgo if classifier doesn't already exist
             classifier_exists = bool(glob.glob(PL_ROOT + '/data-cache/classifier_' + ptName + '_*'))

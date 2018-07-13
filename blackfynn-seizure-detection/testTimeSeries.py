@@ -11,7 +11,7 @@ import numpy as np
 
 from annots import makeAnnotFile
 from pullClips import pullClips
-from settings import FREQ, PL_CLIP_LENGTH, PL_ROOT
+from settings import DEFAULT_FREQ, FREQS, PL_CLIP_LENGTH, PL_ROOT
 from sliceClips import sliceClips
 from train import train
 from tools import clearDir, NoPrint
@@ -31,7 +31,8 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, logging=True
     annotating: Whether to upload annotations to Blackfynn
     '''
 
-    if logging: logfile = ptName + '_seizures.txt'
+    logfile = ptName + '_seizures.txt'
+    freq = FREQS.get(ptName, DEFAULT_FREQ)
     timeSegments = ts.segments()
 
     # Make sure startTime and endTime are valid
@@ -81,7 +82,7 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, logging=True
                 annotFile = '%s/%s_timeseries.txt' % (annotDir, ptName)
                 makeAnnotFile([(pos, pos + PL_CLIP_LENGTH)], annotFile)
                 pullClips(annotFile, 'timeseries', ts, clipDir)
-                segs = sliceClips(clipDir, 'test', FREQ, ptName)
+                segs = sliceClips(clipDir, 'test', freq, ptName)
 
                 if segs: 
                     train('make_predictions', target=ptName)
