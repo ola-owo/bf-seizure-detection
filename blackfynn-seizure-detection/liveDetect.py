@@ -13,6 +13,9 @@ from matplotlib import pyplot as plt
 from matplotlib.dates import DateFormatter, date2num
 import numpy as np
 
+# Workaround for blackfynn server errors:
+from requests.exceptions import RequestException
+
 from lineLength import lineLength
 from pipeline import pipeline
 from settings import (

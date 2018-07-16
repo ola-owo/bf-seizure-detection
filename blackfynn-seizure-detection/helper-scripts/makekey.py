@@ -12,17 +12,16 @@ import re
 import sys
 from blackfynn import Blackfynn
 
+from settings import TS_IDs
+
 ptName = sys.argv[1]
 annotFile = sys.argv[2]
 logFile = sys.argv[3]
 
 bf = Blackfynn()
-ts = bf.get('N:package:86985e61-c940-4404-afa7-94d0add8333f')
+ts = bf.get(TS_IDs[ptName])
 start = ts.start
 end = ts.end
-#segs = ts.segments()
-#segs_idx = 0
-#num_segs = len(segs)
 
 CLIP_LENGTH = 15000000
 keyFile = ptName + '_key.csv'
@@ -45,8 +44,10 @@ def isIctal(start, end):
     'Returns s: clip is a seizure, and e: clip is an early seizure'
     s = 0
     e = 0
+    clipLength = end - start
     for ictal in ictals:
-        if min(end, ictal[1]) - max(start, ictal[0]) >= 7500000:
+        #if min(end, ictal[1]) - max(start, ictal[0]) >= clipLength / 2:
+        if min(end, ictal[1]) - max(start, ictal[0]) == clipLength:
             s = 1
             if start - ictal[0] < 15000000:
                 e = 1

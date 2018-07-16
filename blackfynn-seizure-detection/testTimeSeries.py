@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 '''
 Standalone usage:
-python testTimeSeries.py tsID layerID ptName [[log] [annotate]]
+python testTimeSeries.py ptName layerID startTime [endTime] [annotate]
 '''
 import os
 import sys
@@ -11,7 +11,7 @@ import numpy as np
 
 from annots import makeAnnotFile
 from pullClips import pullClips
-from settings import DEFAULT_FREQ, FREQS, PL_CLIP_LENGTH, PL_ROOT
+from settings import CHANNELS, DEFAULT_FREQ, FREQs, PL_CLIP_LENGTH, PL_ROOT, TS_IDs
 from sliceClips import sliceClips
 from train import train
 from tools import clearDir, NoPrint
@@ -19,7 +19,7 @@ from tools import clearDir, NoPrint
 annotDir = PL_ROOT + '/annotations'
 clipDir = PL_ROOT + '/clips'
 
-def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, logging=True, annotating=True):
+def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=True):
     '''
     Test liveAlgo classifier on an entire timeseries.
     Detected seizures are written to the given annotation layer.
@@ -27,18 +27,18 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, logging=True
     ts: TimeSeries object to be tested
     layer: Annotation layer object to write to
     ptName: Subject name
-    logging: Whether to log results to file
     annotating: Whether to upload annotations to Blackfynn
     '''
 
     logfile = ptName + '_seizures.txt'
-    freq = FREQS.get(ptName, DEFAULT_FREQ)
+    ch = CHANNELS.get(ptName, None)
+    freq = FREQs.get(ptName, DEFAULT_FREQ)
     timeSegments = ts.segments()
 
     # Make sure startTime and endTime are valid
     if startTime is not None:
         if startTime < ts.start:
-            print 'Warning: startTime', startTime, 'is earlier than the beginning of the Timeseries. Ignoring startTime argument...'
+            print 'Warning: startTime', startTime, 'is before the beginning of the Timeseries. Starting from the beginning of the timeseries...'
             startTime = None
         elif startTime > ts.end:
             print 'Warning: startTime', startTime, 'is after the end of the Timeseries. No data will be analyzed.'
@@ -46,7 +46,7 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, logging=True
 
     if endTime is not None:
         if endTime > ts.end:
-            print 'Warning: endTime', endTime, 'is later than the end of the Timeseries. Ignoring endTime argument...'
+            print 'Warning: endTime', endTime, 'is after the end of the Timeseries. Stopping at the end of the timeseries...'
             endTime = None
         elif endTime < ts.start:
             print 'Warning: endTime', endTime, 'is before the beginning the Timeseries. No data will be analyzed.'
@@ -81,14 +81,14 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, logging=True
             with NoPrint(): # suppress console output
                 annotFile = '%s/%s_timeseries.txt' % (annotDir, ptName)
                 makeAnnotFile([(pos, pos + PL_CLIP_LENGTH)], annotFile)
-                pullClips(annotFile, 'timeseries', ts, clipDir)
+                pullClips(annotFile, 'timeseries', ts, clipDir, ch)
                 segs = sliceClips(clipDir, 'test', freq, ptName)
 
                 if segs: 
                     train('make_predictions', target=ptName)
-                    submissions = [f for f in os.listdir(PL_ROOT + 'submissions') if ptName in f]
+                    submissions = [f for f in os.listdir(PL_ROOT + '/submissions') if ptName in f]
                     submissions.sort()
-                    predFile = PL_ROOT + 'submissions' + submissions[-1]
+                    predFile = PL_ROOT + '/submissions/' + submissions[-1]
                     preds = np.loadtxt(predFile, delimiter=',', skiprows=1, usecols=1).astype(float)
                     if preds.shape == (): 
                         # if preds has only one element, convert it from 0-D to 1-D
@@ -99,9 +99,9 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, logging=True
                     meanScore = 0.0
 
             ###
-            # If the mean prediction score is greater than 0.5, then:
-            # (if annotating) mark clip as a seizure and upload annonation to blackfynn, and
-            # (if logging) write positive prediction to file
+            # If the mean prediction score is greater than 0.5, then
+            # write positive prediction to file, and (if annotating) mark clip
+            # as a seizure and upload annonation to blackfynn.
             if meanScore > 0.5:
                 msg = '+ (%d, %d) %f\n' % (pos, pos + PL_CLIP_LENGTH, meanScore)
                 if not szStarted:
@@ -117,9 +117,7 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, logging=True
                         layer.insert_annotation('Seizure',
                                                 start = szStart, end = szEnd)
 
-            if logging:
-                with open(logfile, 'a') as f: f.write(msg)
-
+            with open(logfile, 'a') as f: f.write(msg)
             pos += PL_CLIP_LENGTH
 
             ### Delete temporary clip data
@@ -140,27 +138,28 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, logging=True
                     fname.startswith('data_test_' + ptName) or
                     fname.startswith('predictions_' + ptName)
                 ):
-                    os.remove(PL_ROOT + '/data-cache' + fname)
+                    os.remove(PL_ROOT + '/data-cache/' + fname)
 
 if __name__ == '__main__':
-    bf = Blackfynn()
 
-    tsID = sys.argv[1]
-    layerID = sys.argv[2]
-    ptName = sys.argv[3]
+    ptName = sys.argv[1]
+    layerID = int(sys.argv[2])
+    startTime = int(sys.argv[3])
 
+    kwargs = sys.argv[4:]
     try:
-        kwargs = sys.argv[6:]
-        logging = ('log' in kwargs)
-        annotating = ('annotate' in kwargs)
-    except IndexError:
-        logging = True
-        annotating = False
-
-    ts = bf.get(tsID)
-    try:
-        layer = ts.get_layer(int(layerID))
+        endTime = int(sys.argv[4])
     except ValueError:
-        layer = None
+        endTime = None
+    annotating = ('annotate' in kwargs)
 
-    testTimeSeries(ts, layer, ptName, logging, annotating)
+    bf = Blackfynn()
+    ts = bf.get(TS_IDs[ptName])
+    try:
+        layer = ts.get_layer(layerID)
+    except:
+        print 'Layer', layerID, 'not found. Not annotating...'
+        layer = None
+        annotating = None
+
+    testTimeSeries(ts, layer, ptName, startTime, endTime, annotating)

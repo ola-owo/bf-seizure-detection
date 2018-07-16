@@ -220,10 +220,10 @@ def parse_input_data(data_dir, target, data_type, pipeline, gen_ictal=False):
         latencies = np.array(latencies)
 
         if ictal:
-            print 'X', X.shape, 'y', y.shape, 'latencies', latencies.shape
+            print 'X ictal', X.shape, 'y ictal', y.shape, 'latencies', latencies.shape
             return X, y, latencies
         elif interictal:
-            print 'X', X.shape, 'y', y.shape
+            print 'X interictal', X.shape, 'y interictal', y.shape
             return X, y
         else:
             print 'X', X.shape

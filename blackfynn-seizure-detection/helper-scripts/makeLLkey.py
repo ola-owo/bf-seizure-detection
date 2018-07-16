@@ -11,12 +11,7 @@ from random import randint
 import sys
 from blackfynn import Blackfynn
 
-TS_IDs = {
-    'R950': 'N:package:6af7dd3b-50f6-43cd-84ad-e0b3af5b636a',
-    'R951': 'N:package:6ff9eb72-4d70-4122-83a1-704d87cfb6b2', 
-    'Ripley': 'N:package:401f556c-4747-4569-b1a8-9e6e50abf919',
-    'UCD2': 'N:package:86985e61-c940-4404-afa7-94d0add8333f',
-}
+from settings import TS_IDs
 
 ptName = sys.argv[1]
 annotFile = sys.argv[2]
@@ -51,9 +46,9 @@ def isIctal(start, end):
     e = 0
     clipLength = end - start
     for ictal in ictals:
-        # check if any part of the clip contains a seizure
+        # check if at least half of the clip contains a seizure
         ictalLength = ictal[1] - ictal[0]
-        if min(end, ictal[1]) - max(start, ictal[0]) > 0:
+        if min(end, ictal[1]) - max(start, ictal[0]) >= clipLength / 2:
             s = 1
             if start - ictal[0] < 15000000: e = 1
             break

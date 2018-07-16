@@ -5,12 +5,15 @@ Line length seizure detector
 Usage: python lineLength.py ptName [startTime [endTime]] [append]
 '''
 import sys
-import numpy as np
+from time import sleep
 
 from blackfynn import Blackfynn
+import numpy as np
+from requests.exceptions import RequestException
 
 from settings import (
-    CHANNELS, LL_CLIP_LENGTH, LL_LAYER_NAME, LL_THRESHOLDS, TS_IDs,
+    CHANNELS, DEFAULT_FREQ, FREQs, LL_CLIP_LENGTH, LL_LAYER_NAME,
+    LL_THRESHOLDS, TS_IDs
 )
 
 def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName=LL_LAYER_NAME):
@@ -23,8 +26,11 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
     layerName: name of layer to write to
     '''
 
-    ts = TS_IDs[ptName]
+    freq = FREQs.get(ptName, DEFAULT_FREQ)
     threshold = LL_THRESHOLDS[ptName]
+
+    bf = Blackfynn()
+    ts = bf.get(TS_IDs[ptName])
     segments = ts.segments()
 
     # Make sure startTime and endTime are valid
@@ -92,11 +98,21 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
                 clip = ts.get_data(start=pos, length=LL_CLIP_LENGTH, channels=ch, use_cache=False)
                 # caching disabled to prevent database disk image errors
                 # note: actual clip length may be shorter than LL_CLIP_LENGTH
+            except RequestException as e:
+                # catch Blackfynn server errors
+                print 'Server error (will retry):', e
+                sleep(2)
+                continue
             except Exception as e:
                 print 'Pull failed:', e
                 pos += LL_CLIP_LENGTH
                 continue
-            if clip.empty:
+            if clip.empty or clip.isnull().all().any():
+                # skip clip if a channel is missing data 
+                pos += LL_CLIP_LENGTH
+                continue
+            if clip.shape[0] / freq * 1000000 < LL_CLIP_LENGTH / 2:
+                # skip clip if it's less than half of max clip length
                 pos += LL_CLIP_LENGTH
                 continue
 

@@ -1,5 +1,5 @@
 '''
-This file contains all of the hyperparameters and patient-specific information
+This file contains all of the tuning parameters and patient-specific information
 needed for seizure detection.
 File and folder names can also be customized here.
 '''
@@ -21,8 +21,6 @@ TS_IDs = {
     'UCD1': 'N:package:3d9de38c-5ab2-4cfe-8f5b-3ed64d1a6b6e',
     'UCD2': 'N:package:86985e61-c940-4404-afa7-94d0add8333f',
 
-    #'D_650': 'N:package:97b17a5b-6c56-4bb0-9d4d-b0b522d96c51',
-    #'Tanner': 'N:package:224539b5-c15b-419c-aeee-d087e16bd475',
     'Gus': 'N:package:cb8231c7-5b8b-4baf-be00-5658133b4d16',
     'Joseph': 'N:package:3768b47c-5ded-4cf9-9bda-dc32f4520b40',
     'T_488': 'N:package:7d49ad78-26a8-4726-b253-cf70a237ec42',
@@ -46,7 +44,6 @@ CHANNELS = {
         'N:channel:4eb5905d-c191-4c32-b63c-1e2b37de7586'
     ],
 
-    #'D_650':
     'Gus': [
         'N:channel:2d3b9c01-2f00-482c-9c67-5ca044f19e89',
         'N:channel:7fea9bce-31aa-44bf-9bd8-398f51e7e00a',
@@ -76,7 +73,6 @@ CHANNELS = {
         'N:channel:fdcc966e-f8cd-4ab8-989f-5ef82bd4a99d',
         'N:channel:e6852e07-a9be-4ed5-a932-94bfb485488c'
     ],
-    #'Tanner': 
 }
 
 #########################
@@ -103,7 +99,7 @@ PL_CLIP_LENGTH = 30000000 # length (usec) of each clip to test
 #####################################
 
 # Old LL Detector:
-LL_CLIP_LENGTH = 60000000 #  length (usec) of each clip to test
+LL_CLIP_LENGTH = 60000000 # length (usec) of each clip to test
 LL_THRESHOLDS = {
     'R_950': 20,
     'R_951': 15,
@@ -112,7 +108,7 @@ LL_THRESHOLDS = {
     'UCD2': 10000,
 
     # TODO: change these values
-    'Gus': 1000000,
+    'Gus': 19,
     'Joseph': 1000000,
     'T_488':  1000000,
     'T_537':  1000000,
@@ -129,10 +125,13 @@ LL_LONG_WINDOWS = {
 }
 LL_SHORT_WINDOWS = {
     # Specify custom short-term window lengths
+    'T_537': 30000000,
+    'Gus': 30000000,
 }
 
 LL_NEW_THRESHOLDS = {
-    # scaling factors relative to mean, instead of absolute values
+    # The new LL detector uses scaling factors relative to the mean,
+    # instead of absolute thresholds
     'R_950': 2.0,
     'R_951': 2.0,
     'Ripley': 2.0,

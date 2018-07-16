@@ -7,16 +7,20 @@ Usage: python lineLength.py ptName [startTime [endTime]] [append]
 '''
 import sys
 from time import sleep
-import numpy as np
 
 from blackfynn import Blackfynn
+import numpy as np
 from requests.exceptions import RequestException
 
 from settings import (
-    CHANNELS, DEFAULT_FREQ, FREQS, LL_LONG_WINDOW_DEFAULT,
-    LL_SHORT_WINDOW_DEFAULT, LL_LONG_WINDOWS, LL_SHORT_WINDOWS, LL_NEW_THRESHOLDS,
-    TS_IDs
+    CHANNELS, DEFAULT_FREQ, FREQs, LL_LONG_WINDOW_DEFAULT,
+    LL_SHORT_WINDOW_DEFAULT, LL_LONG_WINDOWS, LL_SHORT_WINDOWS, LL_NEW_LAYER_NAME,
+    LL_NEW_THRESHOLDS, TS_IDs
 )
+
+shortWindow = 0
+longWindow = 0
+freq = 0
 
 def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName=LL_NEW_LAYER_NAME):
     '''
@@ -27,12 +31,14 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
     append: Whether to append to (or otherwise overwrite) the line length annotation layer
     layerName: name of layer to write to
     '''
-
-    ts = TS_IDs[ptName]
-    freq = FREQS.get(ptName, DEFAULT_FREQ)
-    segments = ts.segments()
+    global shortWindow, longWindow, freq
     longWindow = LL_LONG_WINDOWS.get(ptName, LL_LONG_WINDOW_DEFAULT)
     shortWindow = LL_SHORT_WINDOWS.get(ptName, LL_SHORT_WINDOW_DEFAULT)
+    freq = FREQs.get(ptName, DEFAULT_FREQ)
+
+    bf = Blackfynn()
+    ts = bf.get(TS_IDs[ptName])
+    segments = ts.segments()
 
     # Make sure startTime and endTime are valid
     if startTime is not None:
@@ -223,7 +229,6 @@ def _trimEnd(endTime, segments):
 
 if __name__ == '__main__':
     ptName = sys.argv[1]
-    bf = Blackfynn()
     ch = CHANNELS.get(ptName, None)
 
     try:

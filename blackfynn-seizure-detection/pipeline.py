@@ -11,20 +11,22 @@ ictal and interictal clips -> preproccess clips for the classifier ->
 Run classifier.
 
 Usage:
-> python pipeline.py ptName [annotate [startTime [endTime]]]
+> python pipeline.py ptName [startTime [endTime]] [annotate]
 Use 'start' in place of startTime to go from the beginning until endTime
 '''
 
 import json
 import sys
+from time import sleep
 
 from blackfynn import Blackfynn
+from requests.exceptions import RequestException
 
 from annots import *
 from pullClips import pullClips
 from sliceClips import sliceClips
 from settings import (
-    CHANNELS, DEFAULT_FREQ, FREQS, GOLD_STD_LAYERS, PL_LAYER_NAME, PL_ROOT,
+    CHANNELS, DEFAULT_FREQ, FREQs, GOLD_STD_LAYERS, PL_LAYER_NAME, PL_ROOT,
     TRAINING_SZ_LIMIT, TS_IDs
 )
 from testTimeSeries import testTimeSeries
@@ -32,15 +34,24 @@ from train import train
 from tools import *
 
 def pipeline(ptName, annotating=True, startTime=None, endTime=None, bf=None):
+    ch = CHANNELS.get(ptName, None)
+    freq = FREQs.get(ptName, DEFAULT_FREQ)
+
     ### Get patient-specific settings
     if bf is None: # WORKAROUND: see crontest.py
         bf = Blackfynn()
     ts = bf.get(TS_IDs[ptName])
-    segments = ts.segments()
+
+    while True:
+        try:
+            segments = ts.segments()
+            break
+        except RequestException:
+            sleep(2)
+            continue
+        
     layer = ts.get_layer(GOLD_STD_LAYERS[ptName])
     layerName = layer.name
-    ch = CHANNELS.get(ptName, None)
-    freq = FREQS.get(ptName, DEFAULT_FREQ)
 
     ### Pull ictal and interictal annotation times
     print "Reading annotations from layer '%s'..." % layerName
@@ -73,9 +84,9 @@ def pipeline(ptName, annotating=True, startTime=None, endTime=None, bf=None):
     algoDataDir = PL_ROOT + '/seizure-data/' + ptName
     makeDir(algoDataDir)
     print 'Preparing ictal data for classifier...'
-    sliceClips(clipDir, 'ictal', FREQ, ptName)
+    sliceClips(clipDir, 'ictal', freq, ptName)
     print 'Preparing interictal data for classifier...'
-    sliceClips(clipDir, 'interictal', FREQ, ptName)
+    sliceClips(clipDir, 'interictal', freq, ptName)
     print ''
     sys.stdout.flush()
 

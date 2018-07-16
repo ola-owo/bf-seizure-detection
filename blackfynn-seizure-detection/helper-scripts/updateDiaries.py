@@ -1,3 +1,6 @@
+'''
+Update seizure diaries
+'''
 #!/usr/bin/env python2
 
 import sqlite3
