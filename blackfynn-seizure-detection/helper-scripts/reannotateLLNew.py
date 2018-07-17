@@ -7,7 +7,7 @@ Usage: python -m helper-scripts.reannotateLLNew ptName logfile layerID
 
 import sys
 from blackfynn import Blackfynn
-from settings import LL_NEW_LAYER_NAME, TS_IDs
+from settings import LL_MA_LAYER_NAME, TS_IDs
 
 ptName = sys.argv[1]
 logfile = sys.argv[2]
@@ -16,8 +16,8 @@ scalar = float(sys.argv[3])
 tsID = TS_IDs[ptName]
 bf = Blackfynn()
 ts = bf.get(tsID)
-ts.get_layer(LL_NEW_LAYER_NAME).delete()
-layer = ts.add_layer(LL_NEW_LAYER_NAME)
+ts.get_layer(LL_MA_LAYER_NAME).delete()
+layer = ts.add_layer(LL_MA_LAYER_NAME)
 
 trend = None
 

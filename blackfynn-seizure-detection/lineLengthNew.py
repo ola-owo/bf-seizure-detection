@@ -14,15 +14,15 @@ from requests.exceptions import RequestException
 
 from settings import (
     CHANNELS, DEFAULT_FREQ, FREQs, LL_LONG_WINDOW_DEFAULT,
-    LL_SHORT_WINDOW_DEFAULT, LL_LONG_WINDOWS, LL_SHORT_WINDOWS, LL_NEW_LAYER_NAME,
-    LL_NEW_THRESHOLDS, TS_IDs
+    LL_SHORT_WINDOW_DEFAULT, LL_LONG_WINDOWS, LL_SHORT_WINDOWS, LL_MA_LAYER_NAME,
+    LL_MA_THRESHOLDS, TS_IDs
 )
 
 shortWindow = 0
 longWindow = 0
 freq = 0
 
-def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName=LL_NEW_LAYER_NAME):
+def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName=LL_MA_LAYER_NAME):
     '''
     Runs the line length detector.
 
@@ -38,7 +38,6 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
 
     bf = Blackfynn()
     ts = bf.get(TS_IDs[ptName])
-    segments = ts.segments()
 
     # Make sure startTime and endTime are valid
     if startTime is not None:
@@ -77,8 +76,21 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
         while windowEnd < startTime:
             windowStart = windowEnd
             windowEnd += longWindow
+    else:
+        startTime = ts.start
     if not endTime:
         endTime = ts.end
+
+    # Make sure segments list starts at startTime and ends at endTime
+    segments = ts.segments(startTime, endTime)
+
+    startTime = max(segments[0][0], startTime)
+    print 'start time:', startTime
+    segments[0] = (startTime, segments[0][1])
+
+    endTime = min(segments[-1][1], endTime)
+    print 'end time:', endTime
+    segments[-1] = (segments[-1][0], endTime)
 
     # Go through each long-term window
     while windowStart < endTime and windowEnd <= ts.end:
@@ -90,8 +102,8 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
             sleep(2)
             continue
         if trend is None:
-            print 'skipping long window (no clips)...' # DEBUG
-            sys.stdout.flush() # DEBUG
+            print 'skipping long window (no clips)...'
+            sys.stdout.flush()
             windowStart = windowEnd
             windowEnd += longWindow
             continue
@@ -118,7 +130,6 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
                 segments[i+1:] = []
             except StopIteration:
                 pass
-
             # Trim last clip so it ends at endTime,
             # but only keep it if it's long enough:
             lastClip = shortClips.pop(-1)
@@ -129,13 +140,13 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
                 pass
 
         # Annotate and/or print predictions
-        threshold = LL_NEW_THRESHOLDS[ptName] * trend
+        threshold = LL_MA_THRESHOLDS[ptName] * trend
         for clip in shortClips:
             l = clip['length']
             if l > threshold:
                 print '+ %f (%d, %d)' % (l, clip['start'], clip['end'])
-                layer.insert_annotation('Possible seizure',
-                                        start=clip['start'], end=clip['end'])
+                #layer.insert_annotation('Possible seizure',
+                #                        start=clip['start'], end=clip['end'])
             else:
                 print '- %f (%d, %d)' % (l, clip['start'], clip['end'])
             sys.stdout.flush()

@@ -3,7 +3,7 @@
 Compute metrics on the liveAlgo classifier and plot ROC graph.
 
 Usage:
-python metrics.py keyFile predFile subjName(s)
+python metrics.py keyFile predFile ptName(s)
 '''
 
 import sys
@@ -47,13 +47,14 @@ def printMetrics(keyFile, predFile, subjNames):
     plt.plot(fp_sz, tp_sz)
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('ROC (Seizure detection)')
+    plt.title('Seizure detection ROC for %s' % ', '.join(subjNames))
     plt.savefig('roc-%s-sz.png' % '_'.join(subjNames))
     plt.show()
 
     ### Other stats (precision, recall, f1, support)
     szStats = skl_metrics.classification_report(key, np.rint(pred), target_names = ('Interictal', 'Ictal'))
     print '\n============ SEIZURE DETECTION SUMMARY ============='
+    print 'Patient:', ', '.join(subjNames)
     print szStats
 
 if __name__ == '__main__':

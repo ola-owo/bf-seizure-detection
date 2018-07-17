@@ -17,10 +17,11 @@ import numpy as np
 from requests.exceptions import RequestException
 
 from lineLength import lineLength
+from lineLengthNew import lineLength as maLineLength
 from pipeline import pipeline
 from settings import (
-    CHANNELS, DIARY_DB_NAME, GOLD_STD_LAYERS,
-    LL_LAYER_NAME, PL_LAYER_NAME, PL_ROOT, SZ_PLOT_ROOT, TS_IDs
+    CHANNELS, DIARY_DB_NAME, GOLD_STD_LAYERS, LL_LAYER_NAME, LL_MA_LAYER_NAME,
+    PL_LAYER_NAME, PL_ROOT, SZ_PLOT_ROOT, TS_IDs
 )
 from testTimeSeries import testTimeSeries
 from tools import makeDir
@@ -62,6 +63,8 @@ def detect(bf, startTime, algo):
 
         if algo == 'linelength':
             lineLength(ptName, ch, startTime, endTime, append=True, layerName=LL_LAYER_NAME)
+        elif algo == 'ma_linelength':
+            maLineLength(ptName, ch, startTime, endTime, append=True, layerName=LL_MA_LAYER_NAME)
         elif algo == 'pipeline':
             # Train liveAlgo if classifier doesn't already exist
             classifier_exists = bool(glob.glob(PL_ROOT + '/data-cache/classifier_' + ptName + '_*'))
@@ -82,6 +85,8 @@ def diary(bf, algo):
     '''
     if algo == 'linelength':
         liveLayerName = LL_LAYER_NAME
+    elif algo == 'ma_linelength':
+        liveLayerName = LL_MA_LAYER_NAME
     elif algo == 'pipeline':
         liveLayerName = PL_LAYER_NAME
     else:

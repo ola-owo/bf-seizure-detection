@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 '''
-Takes in a Line Length log file (nohup-ll-XXX.out)
+Takes in a MA Line Length log file (ll-new-XXX.out)
 and makes an answer key and prediction file
 
-Usage: makeLLkey.py ptName annotFile logFile
+Usage: makeLLNewkey.py ptName annotFile logFile
 '''
 
 import csv
@@ -75,9 +75,13 @@ with open(logFile, 'rU') as f:
     trend = None
     for line in f.readlines():
         split = line.strip().split()
+        if split[0] == 'TREND:':
+            trend = float(split[1])
+            continue
         if len(split) != 4 or split[0] not in '+-' : continue
         pred = int(split[0] == '+')
-        score = float(split[1])
+        length = float(split[1])
+        score = length / trend
         startTime = int(split[2].lstrip('(').rstrip(','))
         endTime = int(split[3].rstrip(')'))
 

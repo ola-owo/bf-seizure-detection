@@ -16,8 +16,6 @@ from sliceClips import sliceClips
 from train import train
 from tools import clearDir, NoPrint
 
-annotDir = PL_ROOT + '/annotations'
-clipDir = PL_ROOT + '/clips'
 
 def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=True):
     '''
@@ -30,6 +28,8 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=T
     annotating: Whether to upload annotations to Blackfynn
     '''
 
+    annotDir = PL_ROOT + '/annotations'
+    clipDir = PL_ROOT + '/clips/' + ptName
     logfile = ptName + '_seizures.txt'
     ch = CHANNELS.get(ptName, None)
     freq = FREQs.get(ptName, DEFAULT_FREQ)

@@ -116,7 +116,7 @@ LL_THRESHOLDS = {
     'T_608':  1000000,
 }
 
-# New LL Detector:
+# Moving Average LL Detector:
 LL_LONG_WINDOW_DEFAULT = 28800000000 # default value (usec)
 LL_SHORT_WINDOW_DEFAULT = 60000000 # default value (usec)
 
@@ -130,7 +130,7 @@ LL_SHORT_WINDOWS = {
     'Joseph': 30000000,
 }
 
-LL_NEW_THRESHOLDS = {
+LL_MA_THRESHOLDS = {
     # The new LL detector uses scaling factors relative to the mean,
     # instead of absolute thresholds
     'R_950': 2.0,
@@ -170,4 +170,4 @@ DIARY_DB_NAME = 'live/diaries.db'
 LL_LAYER_NAME = 'UPenn_Line_Length_Detector'
 
 # lineLengthNew:
-LL_NEW_LAYER_NAME = 'UPenn_MA_LL_Detector'
+LL_MA_LAYER_NAME = 'UPenn_MA_LL_Detector'
