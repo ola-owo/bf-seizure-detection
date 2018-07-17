@@ -127,6 +127,7 @@ LL_SHORT_WINDOWS = {
     # Specify custom short-term window lengths
     'T_537': 30000000,
     'Gus': 30000000,
+    'Joseph': 30000000,
 }
 
 LL_NEW_THRESHOLDS = {
@@ -138,11 +139,11 @@ LL_NEW_THRESHOLDS = {
     'UCD1': 3.0,
     'UCD2': 3.0,
 
-    'Gus': 3.0,
-    'Joseph': 3.0,
+    'Gus': 1.5,
+    'Joseph': 1.5,
     'T_488': 3.0,
     'T_537': 3.0,
-    'T_571': 3.0,
+    'T_571': 1.5,
     'T_608': 3.0,
 }
 
@@ -169,4 +170,4 @@ DIARY_DB_NAME = 'live/diaries.db'
 LL_LAYER_NAME = 'UPenn_Line_Length_Detector'
 
 # lineLengthNew:
-LL_NEW_LAYER_NAME = 'UPenn_New_LL_Detector'
+LL_NEW_LAYER_NAME = 'UPenn_MA_LL_Detector'

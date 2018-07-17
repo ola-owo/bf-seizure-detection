@@ -1,6 +1,8 @@
 #!/usr/bin/env python2
 '''
-Plot (non)seizure clips
+Plot clips
+
+Usage: plotSz.py clipRoot ptName
 '''
 
 import os

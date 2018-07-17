@@ -33,6 +33,8 @@ if algo == 'pipeline':
     print '=== Using pipeline ==='
 elif algo == 'linelength':
     print '=== Using line length detector ==='
+elif algo == 'ma_linelength':
+    print '=== Using MA line length detector ==='
 else:
     raise ValueError("Invalid classifier option '%s'" % algo)
 
