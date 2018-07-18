@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 '''
-Takes in a Line Length log file (nohup-ll-XXX.out)
-and makes an answer key and prediction file
+Takes in a basic line length detector log file (ll-XXX.out) plus a
+seizure annotation timestamp file, and makes an answer key and prediction file
 
-Usage: makeLLkey.py ptName annotFile logFile
+Usage: python -m helper-scripts.makeLLkey ptName annotFile logFile
 '''
 
 import csv
@@ -21,24 +21,9 @@ bf = Blackfynn()
 ts = bf.get(TS_IDs[ptName])
 start = ts.start
 end = ts.end
-#segs = ts.segments()
-#segs_idx = 0
-#num_segs = len(segs)
 
 keyFile = ptName + '_key.csv'
 predFile = ptName + '_preds.csv'
-
-#def searchSegs(t):
-#    'Finds start time t in segments and updates segs_idx to match'
-#    global segs_idx
-#    while segs_idx < num_segs:
-#        curr_seg = segs[segs_idx]
-#        if curr_seg[0] <= t and curr_seg[1] > t:
-#            return True
-#        elif curr_seg[0] > t:
-#            return False
-#        segs_idx += 1
-#    return False
 
 def isIctal(start, end):
     'Returns s: clip is a seizure, and e: clip is an early seizure'

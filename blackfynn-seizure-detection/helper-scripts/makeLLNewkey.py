@@ -3,7 +3,7 @@
 Takes in a MA Line Length log file (ll-new-XXX.out)
 and makes an answer key and prediction file
 
-Usage: makeLLNewkey.py ptName annotFile logFile
+Usage: python -m helper-scripts.makeLLNewkey ptName annotFile logFile
 '''
 
 import csv
@@ -21,24 +21,9 @@ bf = Blackfynn()
 ts = bf.get(TS_IDs[ptName])
 start = ts.start
 end = ts.end
-#segs = ts.segments()
-#segs_idx = 0
-#num_segs = len(segs)
 
 keyFile = ptName + '_key.csv'
 predFile = ptName + '_preds.csv'
-
-#def searchSegs(t):
-#    'Finds start time t in segments and updates segs_idx to match'
-#    global segs_idx
-#    while segs_idx < num_segs:
-#        curr_seg = segs[segs_idx]
-#        if curr_seg[0] <= t and curr_seg[1] > t:
-#            return True
-#        elif curr_seg[0] > t:
-#            return False
-#        segs_idx += 1
-#    return False
 
 def isIctal(start, end):
     'Returns s: clip is a seizure, and e: clip is an early seizure'
@@ -46,9 +31,10 @@ def isIctal(start, end):
     e = 0
     clipLength = end - start
     for ictal in ictals:
-        # check if at least half of the clip contains a seizure
-        ictalLength = ictal[1] - ictal[0]
-        if min(end, ictal[1]) - max(start, ictal[0]) >= clipLength / 2:
+        # check if the middle of the seizure is inside the clip
+        ictalMiddle = (ictal[1] + ictal[0]) / 2
+        #if min(end, ictal[1]) - max(start, ictal[0]) >= clipLength / 2:
+        if ictalMiddle > start and ictalMiddle < end:
             s = 1
             if start - ictal[0] < 15000000: e = 1
             break

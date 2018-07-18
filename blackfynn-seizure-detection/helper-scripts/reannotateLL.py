@@ -1,32 +1,24 @@
 '''
-Re-annotate line length detector using a different threshold
+Re-annotate basic line length detector using a custom threshold.
 
-Usage: python reannotateLL.py ptName logfile layerID threshold
+Usage: python -m helper-scripts.reannotateLL ptName logfile threshold
 '''
 
 import sys
 from blackfynn import Blackfynn
 
-TS_IDs = { 
-    'Old_Ripley': 'N:package:8d8ebbfd-56ac-463d-a717-d48f5d318c4c',
-    'R_950': 'N:package:f950c9de-b775-4919-a867-02ae6a0c9370',
-    'R_951': 'N:package:6ff9eb72-4d70-4122-83a1-704d87cfb6b2',
-    'Ripley': 'N:package:401f556c-4747-4569-b1a8-9e6e50abf919',
-    'UCD2': 'N:package:86985e61-c940-4404-afa7-94d0add8333f',
-}
+from settings import TS_IDs, LL_LAYER_NAME
 
 ptName = sys.argv[1]
 logfile = sys.argv[2]
-layerID = int(sys.argv[3])
-thresh = float(sys.argv[4])
+thresh = float(sys.argv[3])
 
 tsID = TS_IDs[ptName]
 bf = Blackfynn()
 ts = bf.get(tsID)
-layer = ts.get_layer(layerID)
-layerName = layer.name
-layer.delete()
-layer = ts.add_layer(layerName)
+layer = ts.get_layer(LL_LAYER_NAME)
+for ann in layer.annotations():
+    ann.delete()
 
 with open(logfile, 'rU') as f:
     for line in f.readlines():
@@ -35,5 +27,6 @@ with open(logfile, 'rU') as f:
         length = float(spl[1])
         startTime = int(spl[2].lstrip('(').rstrip(','))
         endTime = int(spl[3].rstrip(')'))
-
-        if length > thresh: layer.insert_annotation('Possible seizure', start=startTime, end=endTime)
+        if length > thresh:
+            layer.insert_annotation('Possible seizure',
+                                    start=startTime, end=endTime)

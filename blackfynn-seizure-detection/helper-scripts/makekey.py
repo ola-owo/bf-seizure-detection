@@ -1,15 +1,16 @@
 #!/usr/bin/env python2
 '''
-Takes in a pipeline output file (X_seizures.txt), and makes prediction and
-answer key files which can be used by metrics.py
+Takes in a pipeline output file (XXX_seizures.txt) plus a seizure annotation
+file, and makes prediction and answer key CSVs which can be used by metrics.py
 
-Usage: makekey.py ptName annotFile logFile
+Usage: python -m helper-scripts.makekey ptName annotFile logFile
 '''
 
 import csv
 from random import randint
 import re
 import sys
+
 from blackfynn import Blackfynn
 
 from settings import TS_IDs

@@ -1,8 +1,8 @@
-
 '''
-Annotate new line length detector from an output log
+Annotate MA line length detector from an output log,
+using a custom threshold multiplier
 
-Usage: python -m helper-scripts.reannotateLLNew ptName logfile layerID
+Usage: python -m helper-scripts.reannotateLLNew ptName logfile threshold
 '''
 
 import sys
@@ -19,9 +19,8 @@ ts = bf.get(tsID)
 ts.get_layer(LL_MA_LAYER_NAME).delete()
 layer = ts.add_layer(LL_MA_LAYER_NAME)
 
-trend = None
-
 with open(logfile, 'rU') as f:
+    trend = None
     for line in f.readlines():
         spl = line.strip().split()
         if spl[0] == 'TREND:':

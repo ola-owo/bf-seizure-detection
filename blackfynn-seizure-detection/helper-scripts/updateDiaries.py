@@ -1,10 +1,11 @@
 '''
-Update seizure diaries
+Manually update seizure diary plots.
 '''
-#!/usr/bin/env python2
 
 import sqlite3
+
 from blackfynn import Blackfynn
+
 import liveDetect
 from settings import TS_IDs, LL_LAYER_NAME, LL_MA_LAYER_NAME
 

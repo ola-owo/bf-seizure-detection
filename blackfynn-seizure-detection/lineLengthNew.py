@@ -18,11 +18,12 @@ from settings import (
     LL_MA_THRESHOLDS, TS_IDs
 )
 
-shortWindow = 0
-longWindow = 0
-freq = 0
+shortWindow = None
+longWindow = None
+freq = None
+ch = None
 
-def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName=LL_MA_LAYER_NAME):
+def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_MA_LAYER_NAME):
     '''
     Runs the line length detector.
 
@@ -31,10 +32,11 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
     append: Whether to append to (or otherwise overwrite) the line length annotation layer
     layerName: name of layer to write to
     '''
-    global shortWindow, longWindow, freq
+    global shortWindow, longWindow, freq, ch
     longWindow = LL_LONG_WINDOWS.get(ptName, LL_LONG_WINDOW_DEFAULT)
     shortWindow = LL_SHORT_WINDOWS.get(ptName, LL_SHORT_WINDOW_DEFAULT)
     freq = FREQs.get(ptName, DEFAULT_FREQ)
+    ch = CHANNELS.get(ptName, None)
 
     bf = Blackfynn()
     ts = bf.get(TS_IDs[ptName])
@@ -145,8 +147,8 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
             l = clip['length']
             if l > threshold:
                 print '+ %f (%d, %d)' % (l, clip['start'], clip['end'])
-                #layer.insert_annotation('Possible seizure',
-                #                        start=clip['start'], end=clip['end'])
+                layer.insert_annotation('Possible seizure',
+                                        start=clip['start'], end=clip['end'])
             else:
                 print '- %f (%d, %d)' % (l, clip['start'], clip['end'])
             sys.stdout.flush()
@@ -261,7 +263,6 @@ def _trimEnd(endTime, segments):
 
 if __name__ == '__main__':
     ptName = sys.argv[1]
-    ch = CHANNELS.get(ptName, None)
 
     try:
         startTime = int(sys.argv[2])
@@ -275,4 +276,4 @@ if __name__ == '__main__':
 
     append = ('append' in sys.argv[2:])
 
-    lineLength(ptName, ch, startTime, endTime=None, append=append)
+    lineLength(ptName, startTime, endTime=None, append=append)

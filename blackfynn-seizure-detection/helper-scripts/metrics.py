@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 '''
-Compute metrics on the liveAlgo classifier and plot ROC graph.
+Compute metrics for a classifier on one or more patients and plot the ROC.
 
 Usage:
-python metrics.py keyFile predFile ptName(s)
+python -m helper-scripts.metrics keyFile predFile ptName1 [ptName2 ... ptName(n)]
 '''
 
 import sys
@@ -16,7 +16,7 @@ def printMetrics(keyFile, predFile, subjNames):
     ### Read answer key and predictions
     print 'Reading predictions and answer key...'
     keyAll = np.loadtxt(keyFile, delimiter=',', skiprows=1, usecols=1)
-    predAll = np.loadtxt(predFile, delimiter=',', skiprows=1, usecols=1)
+    predAll = np.loadtxt(predFile, delimiter=',', skiprows=1, usecols=(1,2))
 
     with open(keyFile, 'rU') as f:
         f.readline()
@@ -35,27 +35,58 @@ def printMetrics(keyFile, predFile, subjNames):
         keyIdx.append(l)
 
     key = keyAll[keyIdx]
-    pred = predAll[predIdx]
+    pred = np.rint(predAll[predIdx, 0]).flatten()
+    scores = predAll[predIdx, 1].flatten()
 
     ### Generate ROC and AUC
     print 'Generating ROC curves...'
-    fp_sz, tp_sz, thresh_sz = skl_metrics.roc_curve(key, pred)
+    fp_sz, tp_sz, thresh_sz = skl_metrics.roc_curve(key, scores, drop_intermediate=False)
 
-    auc_sz = skl_metrics.roc_auc_score(key, pred)
+    auc_sz = skl_metrics.roc_auc_score(key, scores)
     print 'Area under ROC (seizure):', auc_sz
 
     plt.plot(fp_sz, tp_sz)
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
+    plt.ylim(ymin=0)
     plt.title('Seizure detection ROC for %s' % ', '.join(subjNames))
-    plt.savefig('roc-%s-sz.png' % '_'.join(subjNames))
+    plt.savefig('roc-%s.png' % '_'.join(subjNames))
     plt.show()
 
     ### Other stats (precision, recall, f1, support)
-    szStats = skl_metrics.classification_report(key, np.rint(pred), target_names = ('Interictal', 'Ictal'))
+    szStats = skl_metrics.classification_report(key, pred, target_names = ('Interictal', 'Ictal'))
     print '\n============ SEIZURE DETECTION SUMMARY ============='
     print 'Patient:', ', '.join(subjNames)
     print szStats
+
+    ### Contingency table
+    tp_total = 0
+    fp_total = 0
+    tn_total = 0
+    fn_total = 0
+
+    for i in range(pred.size):
+        if key[i] == 1:
+            if pred[i] == 1:
+                tp_total += 1
+            elif pred[i] == 0:
+                fn_total += 1
+        elif key[i] == 0:
+            if pred[i] == 1:
+                fp_total += 1
+            elif pred[i] == 0:
+                tn_total += 1
+
+    print 'True Positives:', tp_total
+    print 'False Positives:', fp_total
+    print 'True Negatives:', tn_total
+    print 'False Negatives:', fn_total
+
+    ### Sensitivity and specificity
+    sens = float(tp_total) / (tp_total + fn_total)
+    spec = float(tn_total) / (tn_total + fp_total)
+    print 'Sensitivity:', sens
+    print 'Specificity:', spec
 
 if __name__ == '__main__':
     keyFile = sys.argv[1]

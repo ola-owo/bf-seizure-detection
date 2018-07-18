@@ -2,7 +2,7 @@
 '''
 Plot clips
 
-Usage: plotSz.py clipRoot ptName
+Usage: python -m helper-scripts.plotSz clipRoot ptName
 '''
 
 import os
@@ -34,8 +34,8 @@ if __name__ == '__main__':
     i = 1
     while True:
         try:
-            data = hickle.load('%s/nonsz%d.hkl' % (clipDir, i)) # load non-seizures
-            #data = hickle.load('%s/sz%d.hkl' % (clipDir, i)) # load seizures
+            data = hickle.load('%s/sz%d.hkl' % (clipDir, i)) # load seizures
+            #data = hickle.load('%s/nonsz%d.hkl' % (clipDir, i)) # load non-seizures
         except:
             break
         plotSz(data, '%s sz%d' % (ptName, i), 4, 'clip%d.png' % i)

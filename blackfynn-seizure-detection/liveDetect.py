@@ -62,9 +62,9 @@ def detect(bf, startTime, algo):
         ch = CHANNELS.get(ptName, None)
 
         if algo == 'linelength':
-            lineLength(ptName, ch, startTime, endTime, append=True, layerName=LL_LAYER_NAME)
+            lineLength(ptName, startTime, endTime, append=True, layerName=LL_LAYER_NAME)
         elif algo == 'ma_linelength':
-            maLineLength(ptName, ch, startTime, endTime, append=True, layerName=LL_MA_LAYER_NAME)
+            maLineLength(ptName, startTime, endTime, append=True, layerName=LL_MA_LAYER_NAME)
         elif algo == 'pipeline':
             # Train liveAlgo if classifier doesn't already exist
             classifier_exists = bool(glob.glob(PL_ROOT + '/data-cache/classifier_' + ptName + '_*'))
@@ -159,6 +159,7 @@ def diary(bf, algo):
         makeDir(szPlotDir)
         plt.savefig(os.path.join(szPlotDir, imgName))
         print imgName, 'saved in', szPlotDir
+        plt.close()
  
     conn.close()
 
