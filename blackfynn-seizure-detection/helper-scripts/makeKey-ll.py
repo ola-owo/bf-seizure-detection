@@ -1,9 +1,9 @@
 #!/usr/bin/env python2
 '''
-Takes in a MA Line Length log file (ll-new-XXX.out)
-and makes an answer key and prediction file
+Takes in a basic line length detector log file (ll-XXX.out) plus a
+seizure annotation timestamp file, and makes an answer key and prediction file
 
-Usage: python -m helper-scripts.makeLLNewkey ptName annotFile logFile
+Usage: python -m helper-scripts.makeLLkey ptName logFile
 '''
 
 import csv
@@ -11,12 +11,12 @@ from random import randint
 import sys
 from blackfynn import Blackfynn
 
-from settings import TS_IDs
+from settings import PL_ROOT, TS_IDs
 
 ptName = sys.argv[1]
-annotFile = sys.argv[2]
-logFile = sys.argv[3]
+logFile = sys.argv[2]
 
+annotFile = PL_ROOT + '/annotations/' + ptName + '_annotations.txt'
 bf = Blackfynn()
 ts = bf.get(TS_IDs[ptName])
 start = ts.start
@@ -31,10 +31,9 @@ def isIctal(start, end):
     e = 0
     clipLength = end - start
     for ictal in ictals:
-        # check if the middle of the seizure is inside the clip
-        ictalMiddle = (ictal[1] + ictal[0]) / 2
-        #if min(end, ictal[1]) - max(start, ictal[0]) >= clipLength / 2:
-        if ictalMiddle > start and ictalMiddle < end:
+        # check if at least half of the clip contains a seizure
+        ictalLength = ictal[1] - ictal[0]
+        if min(end, ictal[1]) - max(start, ictal[0]) >= clipLength / 2:
             s = 1
             if start - ictal[0] < 15000000: e = 1
             break
@@ -61,13 +60,9 @@ with open(logFile, 'rU') as f:
     trend = None
     for line in f.readlines():
         split = line.strip().split()
-        if split[0] == 'TREND:':
-            trend = float(split[1])
-            continue
         if len(split) != 4 or split[0] not in '+-' : continue
         pred = int(split[0] == '+')
-        length = float(split[1])
-        score = length / trend
+        score = float(split[1])
         startTime = int(split[2].lstrip('(').rstrip(','))
         endTime = int(split[3].rstrip(')'))
 

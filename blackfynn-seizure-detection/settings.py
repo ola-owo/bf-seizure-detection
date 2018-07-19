@@ -169,5 +169,5 @@ DIARY_DB_NAME = 'live/diaries.db'
 # lineLength:
 LL_LAYER_NAME = 'UPenn_Line_Length_Detector'
 
-# lineLengthNew:
+# lineLengthMA:
 LL_MA_LAYER_NAME = 'UPenn_MA_LL_Detector'

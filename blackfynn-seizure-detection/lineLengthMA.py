@@ -215,7 +215,7 @@ def _trend(ts, windowStart, windowEnd):
         print 'No clips could be created within the window.'
         return None, []
     trend = np.mean([clip['length'] for clip in shortClips])
-    print 'TREND:', trend # DEBUG
+    print 'TREND:', trend
     return trend, shortClips
 
 def _length(clip):

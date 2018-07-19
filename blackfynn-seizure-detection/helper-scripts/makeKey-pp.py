@@ -1,22 +1,24 @@
 #!/usr/bin/env python2
 '''
-Takes in a basic line length detector log file (ll-XXX.out) plus a
-seizure annotation timestamp file, and makes an answer key and prediction file
+Takes in a pipeline output file (XXX_seizures.txt) plus a seizure annotation
+file, and makes prediction and answer key CSVs which can be used by metrics.py
 
-Usage: python -m helper-scripts.makeLLkey ptName annotFile logFile
+Usage: python -m helper-scripts.makekey ptName logFile
 '''
 
 import csv
 from random import randint
+import re
 import sys
+
 from blackfynn import Blackfynn
 
-from settings import TS_IDs
+from settings import PL_ROOT, TS_IDs
 
 ptName = sys.argv[1]
-annotFile = sys.argv[2]
-logFile = sys.argv[3]
+logFile = sys.argv[2]
 
+annotFile = PL_ROOT + '/annotations/' + ptName + '_annotations.txt'
 bf = Blackfynn()
 ts = bf.get(TS_IDs[ptName])
 start = ts.start
@@ -24,6 +26,7 @@ end = ts.end
 
 keyFile = ptName + '_key.csv'
 predFile = ptName + '_preds.csv'
+ptrn = re.compile(r'^([+-])\s+\((\d+),\s+(\d+)\)\s+((?:\d*\.)?\d+)$')
 
 def isIctal(start, end):
     'Returns s: clip is a seizure, and e: clip is an early seizure'
@@ -31,11 +34,11 @@ def isIctal(start, end):
     e = 0
     clipLength = end - start
     for ictal in ictals:
-        # check if at least half of the clip contains a seizure
-        ictalLength = ictal[1] - ictal[0]
-        if min(end, ictal[1]) - max(start, ictal[0]) >= clipLength / 2:
+        #if min(end, ictal[1]) - max(start, ictal[0]) >= clipLength / 2:
+        if min(end, ictal[1]) - max(start, ictal[0]) == clipLength:
             s = 1
-            if start - ictal[0] < 15000000: e = 1
+            if start - ictal[0] < 15000000:
+                e = 1
             break
     return s, e
 
@@ -48,29 +51,30 @@ with open(annotFile, 'rU') as f:
 # Create output key file
 outfile_key = open(keyFile, 'wb')
 key_writer = csv.writer(outfile_key, lineterminator='\n')
-key_writer.writerow( ('clip', 'seizure') )
+key_writer.writerow( ('clip', 'seizure', 'early') )
 
 # Create csv of predictions
 outfile_pred = open(predFile, 'wb')
 pred_writer = csv.writer(outfile_pred, lineterminator='\n')
-pred_writer.writerow( ('clip', 'seizure', 'score') )
+pred_writer.writerow( ('clip', 'seizure', 'early') )
 
 with open(logFile, 'rU') as f:
     n = 1
-    trend = None
     for line in f.readlines():
-        split = line.strip().split()
-        if len(split) != 4 or split[0] not in '+-' : continue
-        pred = int(split[0] == '+')
-        score = float(split[1])
-        startTime = int(split[2].lstrip('(').rstrip(','))
-        endTime = int(split[3].rstrip(')'))
+        match = re.match(ptrn, line)
+        pred = int(match.group(1) == '+')
+        startTime = int(match.group(2))
+        endTime = int(match.group(3))
+        score = float(match.group(4))
 
-        # Check if clip is ictal
+        # Check if valid time period
+        #if not searchSegs(startTime): continue
+
+        # Check if clip is in ictals
         s, _ = isIctal(startTime, endTime)
 
         # Write output files
-        clipname = '%s-%d-%d' % (ptName, startTime, endTime)
+        clipname = '%s_%d-%d' % (ptName, startTime, endTime)
         key_writer.writerow( (clipname, s) )
         pred_writer.writerow( (clipname, pred, score) )
         n += 1

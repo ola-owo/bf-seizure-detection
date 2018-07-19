@@ -3,7 +3,7 @@
 Compute metrics for a classifier on one or more patients and plot the ROC.
 
 Usage:
-python -m helper-scripts.metrics keyFile predFile ptName1 [ptName2 ... ptName(n)]
+python -m helper-scripts.metrics keyFile predFile ptName
 '''
 
 import sys
@@ -11,32 +11,15 @@ from matplotlib import pyplot as plt
 import numpy as np
 import sklearn.metrics as skl_metrics
 
-def printMetrics(keyFile, predFile, subjNames):
+def printMetrics(keyFile, predFile, ptName):
     
     ### Read answer key and predictions
     print 'Reading predictions and answer key...'
-    keyAll = np.loadtxt(keyFile, delimiter=',', skiprows=1, usecols=1)
-    predAll = np.loadtxt(predFile, delimiter=',', skiprows=1, usecols=(1,2))
+    key = np.loadtxt(keyFile, delimiter=',', skiprows=1, usecols=1)
+    predArray = np.loadtxt(predFile, delimiter=',', skiprows=1, usecols=(1,2))
 
-    with open(keyFile, 'rU') as f:
-        f.readline()
-        keyClipNamesAll = [line.split(',')[0] for line in f.readlines()]
-    with open(predFile, 'rU') as f:
-        f.readline()
-        predClipNamesAll = [line.split(',')[0] for line in f.readlines()]
-
-    ### Filter only the patients in subjNames
-    keyIdx = []
-    predIdx = []
-    for name in subjNames:
-        l = [i for i in range(len(predClipNamesAll)) if predClipNamesAll[i].startswith(name)]
-        predIdx.append(l)
-        l = [i for i in range(len(keyClipNamesAll)) if keyClipNamesAll[i].startswith(name)]
-        keyIdx.append(l)
-
-    key = keyAll[keyIdx]
-    pred = np.rint(predAll[predIdx, 0]).flatten()
-    scores = predAll[predIdx, 1].flatten()
+    preds = np.rint(predArray[:,0]).flatten()
+    scores = predArray[:,1].flatten()
 
     ### Generate ROC and AUC
     print 'Generating ROC curves...'
@@ -49,14 +32,14 @@ def printMetrics(keyFile, predFile, subjNames):
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.ylim(ymin=0)
-    plt.title('Seizure detection ROC for %s' % ', '.join(subjNames))
-    plt.savefig('roc-%s.png' % '_'.join(subjNames))
+    plt.title('Seizure detection ROC for ' + ptName)
+    plt.savefig('roc-%s.png' % ptName)
     plt.show()
 
     ### Other stats (precision, recall, f1, support)
-    szStats = skl_metrics.classification_report(key, pred, target_names = ('Interictal', 'Ictal'))
+    szStats = skl_metrics.classification_report(key, preds, target_names = ('Interictal', 'Ictal'))
     print '\n============ SEIZURE DETECTION SUMMARY ============='
-    print 'Patient:', ', '.join(subjNames)
+    print 'Patient:', ptName
     print szStats
 
     ### Contingency table
@@ -65,16 +48,16 @@ def printMetrics(keyFile, predFile, subjNames):
     tn_total = 0
     fn_total = 0
 
-    for i in range(pred.size):
+    for i in range(preds.size):
         if key[i] == 1:
-            if pred[i] == 1:
+            if preds[i] == 1:
                 tp_total += 1
-            elif pred[i] == 0:
+            elif preds[i] == 0:
                 fn_total += 1
         elif key[i] == 0:
-            if pred[i] == 1:
+            if preds[i] == 1:
                 fp_total += 1
-            elif pred[i] == 0:
+            elif preds[i] == 0:
                 tn_total += 1
 
     print 'True Positives:', tp_total
@@ -91,5 +74,5 @@ def printMetrics(keyFile, predFile, subjNames):
 if __name__ == '__main__':
     keyFile = sys.argv[1]
     predFile = sys.argv[2]
-    subjNames = sys.argv[3:]
-    printMetrics(keyFile, predFile, subjNames)
+    ptName = sys.argv[3]
+    printMetrics(keyFile, predFile, ptName)
