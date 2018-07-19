@@ -189,7 +189,7 @@ def _trend(ts, windowStart, windowEnd):
                 pos += shortWindow
                 continue
             if clip.empty or clip.isnull().all().any():
-                # skip clip if a channel is missing data 
+                # skip clip if a channel is empty 
                 pos += shortWindow
                 continue
             if clip.shape[0] / freq * 1000000 < shortWindow / 2:

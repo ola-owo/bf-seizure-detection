@@ -7,10 +7,11 @@ File and folder names can also be customized here.
 #############################
 ### PATIENT-SPECIFIC INFO ###
 #############################
-DEFAULT_FREQ = 250 # frequency (hz) of each timeseries
+DEFAULT_FREQ = 250 # frequency (Hz) of each timeseries
 FREQs = {
     # Specify the frequency of each patient's timeseries if it's different
     # from the default:
+    'T_488': 500,
 }
 
 TS_IDs = { 
