@@ -11,7 +11,7 @@ DEFAULT_FREQ = 250 # frequency (Hz) of each timeseries
 FREQs = {
     # Specify the frequency of each patient's timeseries if it's different
     # from the default:
-    'T_488': 500,
+    'My_Patient': 500
 }
 
 TS_IDs = { 
