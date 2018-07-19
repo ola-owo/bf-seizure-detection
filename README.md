@@ -5,14 +5,13 @@ Three seizure detectors are included: a random forest classifier, basic line len
 
 ## Setup
 ### Installing dependencies
-It is optional (but strongly recommended) to install the dependencies inside a virtual environment, in order to avoid conflicts with globally installed packages. This can be done using `pip`<sup>[1](#note-1)</sup> and `virtualenv`:
+It is recommended to set up a virtual environment for these scripts in order to avoid conflicts with globally installed packages<sup>[1](#note-1)</sup>. This can be done using `pip`<sup>[2](#note-2)</sup> and `virtualenv`:
 ```bash
 virtualenv env
 source env/bin/activate # to enter the virtual environment
 pip install -r requirements.txt
 deactivate # to exit the virtual environment
 ```
-Note that if this installation method is used, *all scripts* in this pipeline must also be run from inside the virtual environment.
 
 ### Configuring the Blackfynn client
 For the Blackfynn API to work correctly, the user profile must be set up (see [this guide](http://docs.blackfynn.io/platform/clients/getting_started.html) for help).
@@ -28,7 +27,7 @@ Command: `pipeline.py ptName [annotate [startTime [endTime]]]`
 
 Example: `pipeline.py My_Patient annotate 1000000000000 2000000000000`
 
-`pipeline.py` automatically downloads clips from patient `ptName` and trains the classifier<sup>[2](#note-2)</sup> (stored in `liveAlgo/`). If `annotate` is specified, the script tests the TimeSeries for seizures between `startTime` and `endTime` (measured in microseconds since Unix epoch) and annotates the results on Blackfynn.
+`pipeline.py` automatically downloads clips from patient `ptName` and trains the classifier<sup>[3](#note-3)</sup> (stored in `liveAlgo/`). If `annotate` is specified, the script tests the TimeSeries for seizures between `startTime` and `endTime` (measured in microseconds since Unix epoch) and annotates the results on Blackfynn.
 
 Each step of the pipeline can also be run separately using modules `annots`, `pullClips`, `sliceClips`, and `testTimeSeries`.
 
@@ -50,7 +49,7 @@ Command: `lineLengthMA.py ptName [startTime [endTime]] [append]`
 
 Example: `lineLengthMA.py My_Patient 1000000000000 2000000000000 append`
 
-A moving average (MA) line length detector<sup>[3](#note-3)</sup> is available, located in `lineLengthMA.py` Its command line arguments are identical to those of `lineLength.py`.
+A moving average (MA) line length detector<sup>[4](#note-4)</sup> is available, located in `lineLengthMA.py` Its command line arguments are identical to those of `lineLength.py`.
 
 The MA line length detector requires each patient to have a long-term window length *L*, a short-term window length *S*, and a scalar *k* which is multiplied by the average line length to get the detection threshold for a long-term window. For a long-term window starting at time *t*, the threshold value *T* is calculated as:
 
@@ -58,57 +57,66 @@ The MA line length detector requires each patient to have a long-term window len
 
 Here, *N* is the number short-term windows in each long term window and is equal to floor\[*L/S*\].
 
-The MA line length detector looks for seizures, one long-term window at a time. First, it splits the long-term window into short-term windows and measures the line length of each. Next, it calculates the long-term threshold as explained above. Then, it looks back at the individual line lengths and marks any clip with a line length greater than the threshold as a potential seizure.
+The MA line length detector splits the timeseries into long-term windows and checks them, one at a time, for seizures. First, it splits the long-term window into short-term windows and measures the line length of each. Next, it calculates the long-term threshold as explained above. Then, it looks back at the individual line lengths and marks any clip with a line length greater than the threshold as a potential seizure.
 
 ## Real-Time Seizure Detection
 Command: `cron.py algo > output_file`
 
-Example: `cron.py ma_linelength > cron_log.txt`
+Example: `cron.py ma_linelength`
 
 Live seizure detection can be done using any of the available classifiers, depending the `algo` argument. `pipeline` uses the random forest pipeline/classifier, `linelength` uses the basic line length detector, and `ma_linelength` uses the MA line length detector. `cron.py` will, at a specified time interval, check for new EEG data and search it for possible seizures. The output is written to the file `output_file`.
 
 `cron.py` also automatically maintains daily seizure diaries, displaying each patient's history of human-annotated and auto-detected seizures.
 
+## Logging
+All of the above scripts will print a lot of information, so it is strongly recommended to save the output to a separate file. This is required if you plan to compute metrics on a classifier because the output file is needed by `metrics.py`.  For example, `nohup lineLength.py My_Patient > cron.txt` will run the line length detector on My_Patient and write the output to `cron.txt`.
+
 ## Helper Scripts
-`helper-scripts/` contains several small scripts for automating various tasks.
+`helper-scripts/` contains several small scripts for automating various tasks:
 
 ### lineLengthTest
 Command: `python -m helper-scripts.lineLengthTest ptName [startTime]`
 
 Example: `python -m helper-scripts.lineLengthTest My_Patient 1000000000000`
 
+`lineLengthTest` is used to measure line lengths of sequential clips in a timeseries, starting from `startTime`. This can help with determining threshold values for the basic LL detector; line lengths of known interical periods can be compared to those of known ictal periods. The clip length is equal to `LL_CLIP_LENGTH` (see `settings.py`).
+
 ### makeKey
 Command: `python -m helper-scripts.makeKey-XX ptName logFile`
 
 Example: `python -m helper-scripts.makeKey-ll My_Patient My_Patient_log.txt`
+
+The `makeKey` scripts each take in a classifier's output log and a patient's list of known seizures, and uses them to create a prediction file and a key file. These 2 files can then be used by `metrics`. `makeKey-pp` takes in the auto-generated `[Patient]_seizures.txt` file, while `makeKey-ll` and `makeKey-ma` take in the output of their respective `lineLength` scripts.
 
 ### metrics
 Command: `python -m helper-scripts.metrics keyFile predFile ptName`
 
 Example: `python -m helper-scripts.metrics My_Patient_key.csv My_Patient_preds.csv My_Patient`
 
-### plotSz
-Command: `python -m helper-scripts.plotSz ptName clipType`
-
-Example: `python -m helper-scripts.plotSz My_Patient ictal`
+`metrics.py` takes in key and prediction files, and generates an ROC curve along with precision and recall stats. This script can be used to compare the performance of different classifiers on a patient, or to compare the one classifier's performance across different patients.
 
 ### reannotate
 Command: `python -m helper-scripts.reannotateXX ptName logFile threshold`
 
 Example: `python -m helper-scripts.reannotateLL My_Patient My_Patient_log.txt 1000`
 
+`reannotate` is used to redo line length seizure detection for a patient, using a custom threshold. `reannotateLL` is used for the basic line length detector, while `reannotateMA` corresponds to the MA line length detector.
+
 ### rewriteDiary
 Command: `python -m helper-scripts.rewriteDiary algo`
 
 Example: `python -m helper-scripts.rewriteDiary pipeline`
 
+`rewriteDiary` gets all patients' auto-detected seizure annotations from Blackfynn and overwrties the seizure diary database. This is useful if switching the real-time seizure detector to a different classifier. Note that seizure plots won't be updated until `cron.py` does its daily seizure diary update.
+
 ## Notes
-<b name="note-1">1.</b> I recommend using wheels to install the required packages, so that pip installs an optimized, pre-compiled version of numpy instead of building it from source. Newer versions of pip do this by default.
+<b name="note-1">1.</b> Note that if this installation method is used, **all scripts** must also be run from inside the virtual environment.
 
-<b name="note-2">2.</b> The classifier was created by Michael Hills for a Kaggle contest and is hosted separately [here](https://github.com/MichaelHills/seizure-detection).
+<b name="note-2">2.</b> I recommend using wheels to install the dependencies so that pip installs an optimized, pre-compiled version of numpy instead of building it from source. Newer versions of pip (9.0.1 and above) do this by default. Otherwise, this can be done by adding the `--use-wheel` option.
 
+<b name="note-3">3.</b> The classifier was created by Michael Hills for a [Kaggle contest](https://www.kaggle.com/c/seizure-detection) and is hosted separately [here](https://github.com/MichaelHills/seizure-detection).
 
-<b name="note-3">3.</b> The moving average line length detector is based on a paper by [Esteller et. al.](#ref-1)
+<b name="note-4">4.</b> The moving average line length detector is based on a paper by [Esteller et. al.](#ref-1)
 
 ## References
 <b name="ref-1">1.</b> R. Esteller, J. Echauz, T. Tcheng, B. Litt and B. Pless, "Line length: an efficient feature for seizure onset detection," 2001 Conference Proceedings of the 23rd Annual International Conference of the IEEE Engineering in Medicine and Biology Society, 2001, pp. 1707-1710 vol.2.
