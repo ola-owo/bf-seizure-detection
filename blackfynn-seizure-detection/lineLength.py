@@ -31,7 +31,6 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
 
     bf = Blackfynn()
     ts = bf.get(TS_IDs[ptName])
-    segments = ts.segments()
 
     # Make sure startTime and endTime are valid
     if startTime is not None:
@@ -49,6 +48,14 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
         elif endTime < ts.start:
             print 'Warning: endTime', endTime, 'is before the beginning the Timeseries. No data will be analyzed.'
             return
+
+    # Get segments
+    args = {'start': startTime, 'stop': endTime}
+    if startTime is None:
+        args['start'] = ts.start
+    if endTime is None:
+        args['stop'] = ts.end
+    segments = ts.segments(**args)
 
     # edit segments so that it starts at startTime
     if startTime is None:

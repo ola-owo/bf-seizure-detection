@@ -9,3 +9,8 @@ pipeline-data/
 
 # Used by liveDetect
 diaries.db
+
+# Metrics
+*_preds.csv
+*_key.csv
+roc-*.png

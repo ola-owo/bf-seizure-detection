@@ -54,7 +54,7 @@ LL_THRESHOLDS = {
     'My_Patient': 1000
 }
 
-# New LL Detector:
+# Moving Average LL Detector:
 LL_LONG_WINDOW_DEFAULT = 28800000000 # default value (usec)
 LL_SHORT_WINDOW_DEFAULT = 60000000 # default value (usec)
 
@@ -67,7 +67,7 @@ LL_SHORT_WINDOWS = {
     'My_Patient': 10000000
 }
 
-LL_NEW_THRESHOLDS = {
+LL_MA_THRESHOLDS = {
     # The new LL detector uses scaling factors relative to the mean,
     # instead of absolute thresholds
     'My_Patient': 2.5
@@ -93,7 +93,7 @@ SZ_PLOT_ROOT = 'live' # folder to store seizure history plots
 DIARY_DB_NAME = 'live/diaries.db'
 
 # lineLength:
-LL_LAYER_NAME = 'My Basic Line Length Detections'
+LL_LAYER_NAME = 'Basic Line Length Detections'
 
-# lineLengthNew:
-LL_NEW_LAYER_NAME = 'My Advanced LL Detections'
+# lineLengthMA:
+LL_MA_LAYER_NAME = 'MA Line Length Detections'

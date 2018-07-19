@@ -3,10 +3,12 @@
 "Cron" job to automatically check for new data and annotate
 
 Usage:
-python cron.py linelength|pipeline
+python cron.py algo
 
-The "linelength" option uses the line length detector,
-while the "pipeline" option uses the pipeline and liveAlgo classifier.
+The "algo" option specifies which classifier to use:
+"linelength" uses the line length detector,
+"ma_linelength" uses the moving average line length detector,
+and "pipeline" uses the random forest pipeline/classifier.
 '''
 import json
 import sys
@@ -33,6 +35,8 @@ if algo == 'pipeline':
     print '=== Using pipeline ==='
 elif algo == 'linelength':
     print '=== Using line length detector ==='
+elif algo == 'ma_linelength':
+    print '=== Using MA line length detector ==='
 else:
     raise ValueError("Invalid classifier option '%s'" % algo)
 

@@ -1,44 +1,32 @@
 #!/usr/bin/env python2
 '''
-Takes in a pipeline output file (X_seizures.txt), and makes prediction and
-answer key files which can be used by metrics.py
+Takes in a pipeline output file (XXX_seizures.txt) plus a seizure annotation
+file, and makes prediction and answer key CSVs which can be used by metrics.py
 
-Usage: makekey.py ptName annotFile logFile
+Usage: python -m helper-scripts.makekey ptName logFile
 '''
 
 import csv
 from random import randint
 import re
 import sys
+
 from blackfynn import Blackfynn
 
-from settings import TS_IDs
+from settings import PL_ROOT, TS_IDs
 
 ptName = sys.argv[1]
-annotFile = sys.argv[2]
-logFile = sys.argv[3]
+logFile = sys.argv[2]
 
+annotFile = PL_ROOT + '/annotations/' + ptName + '_annotations.txt'
 bf = Blackfynn()
 ts = bf.get(TS_IDs[ptName])
 start = ts.start
 end = ts.end
 
-CLIP_LENGTH = 15000000
 keyFile = ptName + '_key.csv'
 predFile = ptName + '_preds.csv'
 ptrn = re.compile(r'^([+-])\s+\((\d+),\s+(\d+)\)\s+((?:\d*\.)?\d+)$')
-
-#def searchSegs(t):
-#    'Finds start time t in segments and updates segs_idx to match'
-#    global segs_idx
-#    while segs_idx < num_segs:
-#        curr_seg = segs[segs_idx]
-#        if curr_seg[0] <= t and curr_seg[1] > t:
-#            return True
-#        elif curr_seg[0] > t:
-#            return False
-#        segs_idx += 1
-#    return False
 
 def isIctal(start, end):
     'Returns s: clip is a seizure, and e: clip is an early seizure'

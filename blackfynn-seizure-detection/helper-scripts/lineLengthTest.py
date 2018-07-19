@@ -1,36 +1,30 @@
 #!/usr/bin/env python2
 '''
-Find line lengths at certain times,
-in order to figure out threshold values
+Find line lengths at certain times, in order to figure out threshold values
+for the basic line length detector.
 
-Usage: python lineLengthTest.py ptName [startTime]
+Usage: python -m helper-scripts.lineLengthTest ptName [startTime]
 '''
 import os
 import sys
 import numpy as np
 from blackfynn import Blackfynn
 
-#sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-#print os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-#print os.path.abspath('.')
-sys.path.append('..')
 from settings import CHANNELS, LL_CLIP_LENGTH, TS_IDs
 
 ptName = sys.argv[1]
 bf = Blackfynn()
 ts = bf.get(TS_IDs[ptName])
 ch = CHANNELS.get(ptName, None)
-segments = ts.segments()
 
 try:
     startTime = int(sys.argv[2])
-    i = next(i for i, (a,b) in enumerate(segments) if b > startTime)
-    segments[:i] = []
-    startTime = max(segments[0][0], startTime)
-    segments[0] = (startTime, segments[0][1])
-    print 'start time:', startTime
+    segments = ts.segments(start=startTime)
 except:
+    segments = ts.segments()
+finally:
     startTime = segments[0][0]
+    print 'start time:', startTime
 
 def lineLength(clip):
     lengths = np.zeros(clip.shape[0]).astype('float64')
