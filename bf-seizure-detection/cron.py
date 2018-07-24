@@ -28,8 +28,6 @@ import datetime as DT
 from blackfynn import Blackfynn
 bf = Blackfynn()
 
-EPOCH = DT.datetime(1970,1,1)
-
 algo = sys.argv[1]
 if algo == 'pipeline':
     print '=== Using pipeline ==='

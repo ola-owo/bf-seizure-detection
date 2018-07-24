@@ -1,11 +1,13 @@
 '''
-Miscellaneous helper functions
+Miscellaneous internal helper functions
 '''
 
 import csv
 import os
 import sys
 import datetime as DT
+
+EPOCH = DT.datetime(1970,1,1)
 
 def makeDir(dirName):
     'Make directory dirName. If directory already exists, do nothing.'

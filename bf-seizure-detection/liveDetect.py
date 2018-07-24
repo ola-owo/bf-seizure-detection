@@ -24,12 +24,11 @@ from settings import (
     PL_LAYER_NAME, PL_ROOT, SZ_PLOT_ROOT, TS_IDs
 )
 from testTimeSeries import testTimeSeries
-from tools import makeDir
+from tools import EPOCH, makeDir
 
 # Allows pyplot to work without a display:
 plt.switch_backend('agg')
 
-EPOCH = dt.datetime(1970,1,1)
 PTNAME_REGEX = re.compile(r'^[\w-]+$') # only allow letters, numbers, and "-" in patient name
 
 annotDir = PL_ROOT + '/annotations'
@@ -48,7 +47,7 @@ def detect(bf, startTime, algo):
     now = dt.datetime.utcnow()
     endTime = int((now - EPOCH).total_seconds() * 1000000) # convert to epoch usecs
     if startTime >= endTime:
-        raise ValueError("Time %d hasn't happened yet" % startTime)
+        raise ValueError("startTime %d is in the future." % startTime)
 
     # Loop through each patient
     for ptName in patients:

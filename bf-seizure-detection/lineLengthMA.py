@@ -47,7 +47,7 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
             print 'Warning: startTime', startTime, 'is before the beginning of the Timeseries. Starting from the beginning...'
             startTime = None
         elif startTime > ts.end:
-            print 'Warning: startTime', startTime, 'is after the end of the Timeseries. No data will be analyzed.'
+            print 'Warning: startTime', startTime, 'is after the end of the Timeseries. Exiting...'
             return
 
     if endTime is not None:
@@ -55,7 +55,7 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
             print 'Warning: endTime', endTime, 'is after the end of the Timeseries. Stopping at the end...'
             endTime = None
         elif endTime < ts.start:
-            print 'Warning: endTime', endTime, 'is before the beginning the Timeseries. No data will be analyzed.'
+            print 'Warning: endTime', endTime, 'is before the beginning the Timeseries. Exiting...'
             return
 
     # Get/create annotation layer
@@ -85,6 +85,10 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
 
     # Make sure segments list starts at startTime and ends at endTime
     segments = ts.segments(startTime, endTime)
+    if not segments:
+        print 'No data found between %d and %d.' % (startTime, endTime), \
+              ' Exiting...'
+        return
 
     startTime = max(segments[0][0], startTime)
     print 'start time:', startTime
