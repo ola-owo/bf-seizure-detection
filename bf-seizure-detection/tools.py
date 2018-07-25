@@ -1,5 +1,5 @@
 '''
-Miscellaneous internal helper functions
+Miscellaneous internal tools
 '''
 
 import csv

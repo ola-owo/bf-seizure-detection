@@ -79,9 +79,7 @@ def diaryJob():
 
 schedule.every(DETECTION_INTERVAL).minutes.do(detectJob)
 schedule.every().day.at('00:00').do(diaryJob)
-# DEBUG
-#while True:
-#    schedule.run_pending()
-#    time.sleep(1)
-if __name__ == '__main__':
-    detectJob()
+
+while True:
+    schedule.run_pending()
+    time.sleep(1)
