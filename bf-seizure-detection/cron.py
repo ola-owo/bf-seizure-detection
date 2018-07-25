@@ -19,8 +19,8 @@ from requests.exceptions import RequestException
 
 import schedule
 
-from settings import DETECTION_INTERVAL, LIVE_UPDATE_TIMES
-from tools import timeString
+from settings import DETECTION_INTERVAL, LIVE_UPDATE_TIMES, TS_IDs
+from tools import getTime, timeString
 import liveDetect
 import datetime as DT
 
@@ -43,16 +43,27 @@ with open(LIVE_UPDATE_TIMES, 'r') as f:
 
 def detectJob():
     global lastUpdated
-    startTime = lastUpdated[algo]
-    print '=== Running %s classifier from %s ===' % (algo, timeString(startTime))
-    try:
-        endTime = liveDetect.detect(bf, startTime, algo)
-        lastUpdated[algo] = endTime
+    endTime = getTime()
+    print '=== Running %s classifier until %s ===' % (algo, endTime)
+    patients = sorted(TS_IDs.keys())
+    for ptName in patients:
+        startTime = lastUpdated[algo][ptName]
+        print '=== Testing patient', ptName, 'from', timeString(startTime), '==='
+        try:
+            newStartTime = liveDetect.detect(bf, ptName, startTime, endTime, algo)
+            lastUpdated[algo][ptName] = newStartTime
+        except RequestException as e:
+            print '=== Server error (will try again later) ==='
+            print e
+            continue
+        except:
+            with open(LIVE_UPDATE_TIMES, 'w') as f:
+                json.dump(lastUpdated, f)
+            raise
         print '=== Up to date as of', timeString(endTime), '==='
-    except RequestException as e:
-        print '=== Error running classifier ==='
-        print e
-    sys.stdout.flush() # make sure all print statements are outputted by this point
+        sys.stdout.flush() # make sure all print statements are outputted by this point
+    print '=== Done running classifier on all patients ==='
+    sys.stdout.flush()
     with open(LIVE_UPDATE_TIMES, 'w') as f:
         json.dump(lastUpdated, f)
 
@@ -68,7 +79,9 @@ def diaryJob():
 
 schedule.every(DETECTION_INTERVAL).minutes.do(detectJob)
 schedule.every().day.at('00:00').do(diaryJob)
-
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+# DEBUG
+#while True:
+#    schedule.run_pending()
+#    time.sleep(1)
+if __name__ == '__main__':
+    detectJob()

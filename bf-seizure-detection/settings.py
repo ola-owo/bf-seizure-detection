@@ -158,7 +158,7 @@ PL_ROOT = 'pipeline-data' # folder for temporary pipeline data
 PL_LAYER_NAME = 'UPenn_Seizure_Detections'
 
 # cron:
-LIVE_UPDATE_TIMES = 'live/last_updated.json'
+LIVE_UPDATE_TIMES = 'last_updated_new.json'
 
 # liveDetect:
 SZ_PLOT_ROOT = 'live' # folder to store seizure history plots

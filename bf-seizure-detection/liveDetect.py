@@ -20,11 +20,11 @@ from lineLength import lineLength
 from lineLengthMA import lineLength as maLineLength
 from pipeline import pipeline
 from settings import (
-    CHANNELS, DIARY_DB_NAME, GOLD_STD_LAYERS, LL_LAYER_NAME, LL_MA_LAYER_NAME,
-    PL_LAYER_NAME, PL_ROOT, SZ_PLOT_ROOT, TS_IDs
+    CHANNELS, DIARY_DB_NAME, GOLD_STD_LAYERS, LIVE_UPDATE_TIMES, LL_LAYER_NAME,
+    LL_MA_LAYER_NAME, PL_LAYER_NAME, PL_ROOT, SZ_PLOT_ROOT, TS_IDs
 )
 from testTimeSeries import testTimeSeries
-from tools import EPOCH, makeDir
+from tools import makeDir
 
 # Allows pyplot to work without a display:
 plt.switch_backend('agg')
@@ -33,9 +33,8 @@ PTNAME_REGEX = re.compile(r'^[\w-]+$') # only allow letters, numbers, and "-" in
 
 annotDir = PL_ROOT + '/annotations'
 clipDir = PL_ROOT + '/clips'
-patients = sorted(TS_IDs.keys())
 
-def detect(bf, startTime, algo):
+def detect(bf, ptName, startTime, endTime, algo):
     '''
     Run classifier on all patients, starting from startTime.
 
@@ -44,38 +43,34 @@ def detect(bf, startTime, algo):
     '''
 
     # Make sure startTime is valid
-    now = dt.datetime.utcnow()
-    endTime = int((now - EPOCH).total_seconds() * 1000000) # convert to epoch usecs
     if startTime >= endTime:
         raise ValueError("startTime %d is in the future." % startTime)
 
-    # Loop through each patient
-    for ptName in patients:
-        print 'Testing patient', ptName
-        try:
-            ts = bf.get(TS_IDs[ptName])
-        except Exception as e: # TODO: should probably make this more specific
-            print "Error getting timeseries for patient '" + ptName + "':"
-            print e
-            continue
-        ch = CHANNELS.get(ptName, None)
+    try:
+        ts = bf.get(TS_IDs[ptName])
+    except Exception as e: # TODO: should probably make this more specific
+        print "Error getting timeseries for patient '" + ptName + "':"
+        print e
+        return startTime
+    ch = CHANNELS.get(ptName, None)
 
-        if algo == 'linelength':
-            lineLength(ptName, startTime, endTime, append=True, layerName=LL_LAYER_NAME)
-        elif algo == 'ma_linelength':
-            maLineLength(ptName, startTime, endTime, append=True, layerName=LL_MA_LAYER_NAME)
-        elif algo == 'pipeline':
-            # Train liveAlgo if classifier doesn't already exist
-            classifier_exists = bool(glob.glob(PL_ROOT + '/data-cache/classifier_' + ptName + '_*'))
-            if not classifier_exists:
-                pipeline(ptName, annotating=False, bf=bf)
+    if algo == 'linelength':
+        lineLength(ptName, startTime, endTime, append=True, layerName=LL_LAYER_NAME)
+        return endTime
+    elif algo == 'ma_linelength':
+        t = maLineLength(ptName, startTime, endTime, append=True, layerName=LL_MA_LAYER_NAME)
+        return t
+    elif algo == 'pipeline':
+        # Train liveAlgo if classifier doesn't already exist
+        classifier_exists = bool(glob.glob(PL_ROOT + '/data-cache/classifier_' + ptName + '_*'))
+        if not classifier_exists:
+            pipeline(ptName, annotating=False, bf=bf)
 
-            layer = ts.add_layer(PL_LAYER_NAME)
-            testTimeSeries(ts, layer, ptName, startTime=startTime, endTime=endTime, logging=False, annotating=True)
-        else:
-            raise ValueError("Invalid classifier option '%s'" % algo)
-
-    return endTime
+        layer = ts.add_layer(PL_LAYER_NAME)
+        testTimeSeries(ts, layer, ptName, startTime=startTime, endTime=endTime, logging=False, annotating=True)
+        return endTime
+    else:
+        raise ValueError("Invalid classifier option '%s'" % algo)
 
 def diary(bf, algo):
     '''
@@ -91,7 +86,7 @@ def diary(bf, algo):
     else:
         raise ValueError("Invalid classifier option '%s'" % algo)
 
-
+    patients = sorted(TS_IDs.keys())
     conn = sqlite3.connect(DIARY_DB_NAME)
     c = conn.cursor()
 

@@ -31,6 +31,8 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
     startTime: time (usec) to start from. Default value (None) starts from the beginning
     append: Whether to append to (or otherwise overwrite) the line length annotation layer
     layerName: name of layer to write to
+
+    Returns: endTime (the end of the last full long-term window)
     '''
     global shortWindow, longWindow, freq, ch
     longWindow = LL_LONG_WINDOWS.get(ptName, LL_LONG_WINDOW_DEFAULT)
@@ -48,7 +50,10 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
             startTime = None
         elif startTime > ts.end:
             print 'Warning: startTime', startTime, 'is after the end of the Timeseries. Exiting...'
-            return
+            if endTime is None:
+                return ts.end
+            else:
+                return endTime
 
     if endTime is not None:
         if endTime > ts.end:
@@ -56,7 +61,7 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
             endTime = None
         elif endTime < ts.start:
             print 'Warning: endTime', endTime, 'is before the beginning the Timeseries. Exiting...'
-            return
+            return ts.start
 
     # Get/create annotation layer
     try:
@@ -88,8 +93,7 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
     if not segments:
         print 'No data found between %d and %d.' % (startTime, endTime), \
               ' Exiting...'
-        return
-
+        return endTime
     startTime = max(segments[0][0], startTime)
     print 'start time:', startTime
     segments[0] = (startTime, segments[0][1])
@@ -116,7 +120,7 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
 
         # If using a custom start time, trim shortClips
         # (This should only ever happen with the 1st long-term window)
-        if startTime:
+        if windowStart < startTime:
             try:
                 i = next(i for i,c in enumerate(shortClips) if
                     c['end'] > startTime)
@@ -124,7 +128,9 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
             except StopIteration:
                 pass
             shortClips[0]['start'] = max(shortClips[0]['start'], startTime)
-            startTime = None
+            # Delete 1st clip if it's too short (less than half of shortWindow):
+            if shortClips[0]['end'] - shortClips[0]['start'] < shortWindow / 2:
+                shortClips.pop(0)
 
         # Do the same thing with endTime
         # (Should only ever happen to the last long-term window)
@@ -133,11 +139,10 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
             try:
                 i = next(l-1 - i for i,c in enumerate(reversed(shortClips)) if
                     c['start'] < endTime)
-                segments[i+1:] = []
+                shortClips[i+1:] = []
             except StopIteration:
                 pass
-            # Trim last clip so it ends at endTime,
-            # but only keep it if it's long enough:
+            # Delete last clip if it's not long enough
             lastClip = shortClips.pop(-1)
             if lastClip['end'] - lastClip['start'] >= shortWindow / 2:
                 lastClip['end'] = min(lastClip['end'], endTime)
@@ -160,6 +165,7 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
         # Go to next long term window
         windowStart = windowEnd
         windowEnd += longWindow
+    return endTime
 
 def _trend(ts, windowStart, windowEnd):
     'Returns: trend value, list of clips with their line lengths'
