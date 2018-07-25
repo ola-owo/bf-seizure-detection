@@ -1,11 +1,13 @@
 '''
-Miscellaneous helper functions
+Miscellaneous internal tools
 '''
 
 import csv
 import os
 import sys
 import datetime as DT
+
+EPOCH = DT.datetime(1970,1,1)
 
 def makeDir(dirName):
     'Make directory dirName. If directory already exists, do nothing.'
@@ -55,7 +57,7 @@ def timeString(epoch_usecs):
     return DT.datetime.utcfromtimestamp(epoch_secs).strftime('%b %d %Y %X') + ' UTC (%d)' % epoch_usecs
 
 def getTime():
-    'Get the current time, in usecs'
-    t = DT.datetime.utcnow() - DT.timedelta(minutes=DETECTION_INTERVAL)
+    'Get the current Unix time, in usecs'
+    t = DT.datetime.utcnow()
     t = (t - EPOCH).total_seconds() * 1000000
     return t
