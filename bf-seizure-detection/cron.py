@@ -47,7 +47,7 @@ def detectJob():
     print '=== Running %s classifier until %s ===' % (algo, endTime)
     patients = sorted(TS_IDs.keys())
     for ptName in patients:
-        startTime = lastUpdated[algo][ptName]
+        startTime = lastUpdated[algo][ptName] + 1
         print '=== Testing patient', ptName, 'from', timeString(startTime), '==='
         try:
             newStartTime = liveDetect.detect(bf, ptName, startTime, endTime, algo)

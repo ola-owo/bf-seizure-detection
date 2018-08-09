@@ -11,7 +11,9 @@ import numpy as np
 
 from annots import makeAnnotFile
 from pullClips import pullClips
-from settings import CHANNELS, DEFAULT_FREQ, FREQs, PL_CLIP_LENGTH, PL_ROOT, TS_IDs
+from settings import (
+    CHANNELS, DEFAULT_FREQ, FREQs, PL_CLIP_LENGTH, PL_LAYER_NAME, PL_ROOT,
+    TS_IDs)
 from sliceClips import sliceClips
 from train import train
 from tools import clearDir, NoPrint
@@ -141,25 +143,18 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=T
                     os.remove(PL_ROOT + '/data-cache/' + fname)
 
 if __name__ == '__main__':
-
     ptName = sys.argv[1]
-    layerID = int(sys.argv[2])
-    startTime = int(sys.argv[3])
+    startTime = int(sys.argv[2])
+    kwargs = sys.argv[3:]
+    annotating = ('annotate' in kwargs)
 
-    kwargs = sys.argv[4:]
     try:
-        endTime = int(sys.argv[4])
+        endTime = int(sys.argv[3])
     except ValueError:
         endTime = None
-    annotating = ('annotate' in kwargs)
 
     bf = Blackfynn()
     ts = bf.get(TS_IDs[ptName])
-    try:
-        layer = ts.get_layer(layerID)
-    except:
-        print 'Layer', layerID, 'not found. Not annotating...'
-        layer = None
-        annotating = None
+    layer = ts.add_layer(PL_LAYER_NAME)
 
     testTimeSeries(ts, layer, ptName, startTime, endTime, annotating)

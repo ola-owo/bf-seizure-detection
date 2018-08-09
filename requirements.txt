@@ -2,7 +2,6 @@ blackfynn==2.3.2
 hickle==2.1.0
 matplotlib==2.1.1
 numpy==1.14.5
-plotly==3.1.0
 schedule==0.5.0
 scikit-learn==0.19.1
 scipy==1.0.0
