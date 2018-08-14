@@ -61,3 +61,7 @@ def getTime():
     t = DT.datetime.utcnow()
     t = (t - EPOCH).total_seconds() * 1000000
     return t
+
+def toDateTime(t):
+    'convert epoch time to datetime object'
+    return DT.datetime.utcfromtimestamp(t/1000000)

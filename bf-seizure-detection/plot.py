@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+'Usage: ./plot.py patientName algo'
 
 import datetime as dt
 import re
@@ -17,54 +18,40 @@ from settings import (
     CHANNELS, DIARY_DB_NAME, GOLD_STD_LAYERS, LIVE_UPDATE_TIMES, LL_LAYER_NAME,
     LL_MA_LAYER_NAME, PL_LAYER_NAME, PL_ROOT, SZ_PLOT_ROOT, TS_IDs
 )
+from tools import toDateTime
 
 PTNAME_REGEX = re.compile(r'^[\w-]+$') # only allow letters, numbers, and "-" in patient name
 
 patient = sys.argv[1]
+algo = sys.argv[2]
 if not re.match(PTNAME_REGEX, patient):
-    raise Exception('Invalid patient name - must only contain letters, numbers, underscores, and/or dashes') 
+    raise Exception('Invalid patient name - must only contain letters, numbers, underscores (_), and/or dashes (-)') 
 
-bf = Blackfynn()
-#conn = sqlite3.connect('mini-diary.db')
-conn = sqlite3.connect(DIARY_DB_NAME)
-c = conn.cursor()
-
-def toDateTime(t):
-    'convert epoch time to datetime object'
-    return dt.datetime.utcfromtimestamp(t/1000000)
-
-def makeScatter(seizures, durations, label, height=0):
-    startTimes = map(toDateTime, seizures[:,0])
-    endTimes = map(toDateTime, seizures[:,1])
-
-    traces = []
-    for i in range(len(startTimes)):
-        trace = go.Scatter(
-            x = (startTimes[i], endTimes[i]),
-            y = (height,height),
-            hoverinfo = 'x+text+name',
-            mode = 'lines+markers',
-            text = ['Duration: %d s' % durations[i],
-                    'Duration: %d s' % durations[i]],
-            marker = {
-                'color': durations[i],
-                'colorscale': 'Viridis',
-                'cmin': 0,
-                'cmax': 600,
-                'showscale': False
-            }
-        )
-        if i % 2 == 0:
-            trace.name = 'Seizure start'
-        else:
-            trace.name = 'Seizure end'
-        traces.append(trace)
-    return traces
+def makeScatter(seizureTimes, durations, label, height=0):
+    timestamps = map(toDateTime, seizureTimes)
+    trace = go.Scatter(
+        x = timestamps,
+        y = [height] * len(timestamps),
+        hoverinfo = 'x+text+name',
+        mode = 'markers',
+        name = label,
+        text = ['Duration: %d s'%d for d in durations],
+        marker = {
+            'color': durations,
+            'colorbar': {'title':'Duration (sec)'},
+            'colorscale': 'Viridis',
+            'cmin': 0,
+            'cmax': 600,
+            'showscale': True
+        }
+    )
+    return trace
 
 def seizuresPer(interval, seizures):
     'Calculate seizures per day, week, month'
     total = seizures.shape[0]
-    # Days between 1st and last seizure:
+    if total == 0: return 0.0
+
     days = float(dt.timedelta(
         microseconds = seizures[-1,0] - seizures[0,0]
     ).days)
@@ -79,72 +66,60 @@ def seizuresPer(interval, seizures):
     else:
         raise ValueError("Interval must be 'day', 'week', or 'month'")
 
-print 'Updating seizure diary for', patient
-ts = bf.get(TS_IDs[patient])
+print 'Creating seizure diary for', patient
+print 'Classifier:', algo
 
-# Plot all seizures
-seizures = c.execute('SELECT start, end FROM ' + patient + ' ORDER BY end').fetchall()
-if seizures:
-    seizures = np.array(seizures, dtype='int')
-else:
+# Get seizures from database
+conn = sqlite3.connect('mini-diary.db')
+#conn = sqlite3.connect(DIARY_DB_NAME)
+c = conn.cursor()
+
+seizures = c.execute("SELECT start, end FROM " + patient + " WHERE type = '"+algo+"' ORDER BY end").fetchall()
+seizures = np.array(seizures, dtype='int')
+
+goldSeizures = c.execute("SELECT start, end FROM " + patient + " WHERE type = 'gold' ORDER BY end").fetchall()
+goldSeizures = np.array(goldSeizures, dtype='int')
+
+c.close()
+conn.close()
+if seizures.size == 0:
     print 'No seizures to plot.'
-    conn.close()
     sys.exit()
 
-# Make figure with subplots
-#fig = tools.make_subplots(rows=4, cols=3, specs=[
-#    [{'rowspan': 3, 'colspan': 2}, None, {'rowspan': 3}],
-#    [None, None, None],
-#    [None, None, None],
-#    [{'colspan': 3}, None, None]
-#])
-
-# Plot seizure times
+# Plot seizures
+data = []
 durations = (seizures[:,1] - seizures[:,0]) / 1000000
-data = makeScatter(seizures, durations, 'Auto-detected seizure')
-#for tr in makeScatter(seizures, durations, 'Auto-detected seizure'):
-#    fig.append_trace(tr, 1, 1)
+scatter = makeScatter(seizures[:,0], durations, 'Detected seizure')
+data.append(scatter)
 
-# Plot gold standard seizures (if any):
-layerID = GOLD_STD_LAYERS.get(patient, None)
-if layerID is not None:
-    layer = ts.get_layer(layerID)
-    goldSeizures = np.array([(a.start, a.end) for a in layer.annotations()])
+if goldSeizures.size > 0:
     goldDurations = (goldSeizures[:,1] - goldSeizures[:,0]) / 1000000
-    data += makeScatter(goldSeizures, goldDurations, 'Gold-standard seizure',
-                        height=-1)
-    #for tr in makeScatter(goldSeizures, goldDurations, 'Gold-standard seizure',
-    #                      height=-1):
-    #    fig.append_trace(tr, 1, 1)
+    goldScatter = makeScatter(goldSeizures[:,0], goldDurations, 'Pre-labeled seizure',
+                        height=1)
+    data.append(goldScatter)
 
 # Plot histogram
 hist = go.Histogram(x=durations, xaxis='x2', yaxis='y2', hoverinfo = 'y')
-data.append(hist)
-#fig.append_trace(hist, 1, 3)
+data.insert(0,hist)
 
 # Make seizure stats table
 table = go.Table(
     header = {'values': ['Total seizures', 'Seizures/day',
                          'Seizures/week', 'Seizures/month']},
-    cells = {'values': [
-        seizures.shape[0],
-        round(seizuresPer('day', seizures), 2),
-        round(seizuresPer('week', seizures), 2),
-        round(seizuresPer('month', seizures), 2)
-    ]},
+    cells = {
+        'values': [[
+            seizures.shape[0],
+            round(seizuresPer('day', seizures), 2),
+            round(seizuresPer('week', seizures), 2),
+            round(seizuresPer('month', seizures), 2)]],
+        'fill': {'color': ['#d3d3d3', 'white']},
+        'align': ['left', 'center']
+    },
     #domain = {'y': (0, 0.3)}
     domain = {'y': (0.7, 1)}
 )
-#table = ff.create_table([
-#    ['Total', 'Per day', 'Per week', 'Per month'], [
-#        seizures.shape[0],
-#        round(seizuresPer('day', seizures), 2),
-#        round(seizuresPer('week', seizures), 2),
-#        round(seizuresPer('month', seizures), 2)
-#    ]])
 
 data.append(table)
-#fig.append_trace(table['data'][0], 4, 1)
 
 # Setup layout and plot figure
 layout = go.Layout(
@@ -152,7 +127,7 @@ layout = go.Layout(
     hovermode = 'closest',
     showlegend = False,
     xaxis = dict(
-        domain = (0, 0.7),
+        domain = (0.25, 1),
         title = 'Time (UTC)',
         rangeselector = {'buttons': [
             dict(count=1,
@@ -181,7 +156,7 @@ layout = go.Layout(
         showticklabels = False
     ),
     xaxis2 = {
-        'domain': (0.75, 1),
+        'domain': (0, 0.25),
         'title': 'Seizure duration (sec)'
     },
     yaxis2 = {
@@ -192,7 +167,4 @@ layout = go.Layout(
     }
 )
 fig = go.Figure(data, layout)
-#fig.layout = layout
 off.plot(fig, filename=(patient+'_diary'))
-
-conn.close()
