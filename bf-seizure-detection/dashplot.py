@@ -5,7 +5,6 @@ import datetime as dt
 import sys
 import sqlite3
 
-from blackfynn import Blackfynn
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -14,10 +13,12 @@ import numpy as np
 from plotly import figure_factory as ff
 import plotly.graph_objs as go
 
-from settings import TS_IDs, DIARY_DB_NAME
+from settings import (
+    DIARY_DB_NAME, GOLD_STD_LAYERS, PL_LAYER_NAME, LL_LAYER_NAME,
+    LL_MA_LAYER_NAME, TS_IDs
+)
 from tools import toDateTime
 
-bf = Blackfynn()
 patients = sorted(TS_IDs)
 app = dash.Dash()
 app.scripts.config.serve_locally = True
@@ -89,17 +90,17 @@ def getAnnots(patient, layer, type_, c):
     lastSz = c.execute("SELECT end FROM "+patient+" WHERE type = '"+type_+"' ORDER BY end DESC").fetchone()
     if lastSz:
         t = lastSz[0]
-        anns = layer.annotations(start=t)
+        currAnnots = layer.annotations(start=t)
     else:
-        anns = layer.annotations()
+        currAnnots = layer.annotations()
 
-    while anns:
-        annots += anns
-        t = anns[-1].end
-        anns = layer.annotations(start=t)
+    while currAnnots:
+        annots += currAnnots
+        t = currAnnots[-1].end
+        currAnnots = layer.annotations(start=t)
     return annots
 
-def updatePatient(bf, algo, patient):
+def updateDB(bf, patient, algo):
     '''
     Retreive patient's current gold standard and auto-detected seizures,
     and save them in the database.
@@ -117,7 +118,7 @@ def updatePatient(bf, algo, patient):
     conn = sqlite3.connect('mini-diary.db') # DEBUG
     #conn = sqlite3.connect(DIARY_DB_NAME)
     c = conn.cursor()
-    c.execute('CREATE TABLE IF NOT EXISTS ' + ptName + ' (start INT, end INT)')
+    c.execute('CREATE TABLE IF NOT EXISTS ' + patient + ' (start INT, end INT, type TEXT)')
 
     # Get gold standards
     layerID = GOLD_STD_LAYERS.get(patient, None)

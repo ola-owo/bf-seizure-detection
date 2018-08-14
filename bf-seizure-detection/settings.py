@@ -19,15 +19,15 @@ TS_IDs = {
     # 8/13/18: Switched to pipeline live detector and disabled
     #          all dogs except UCD 1&2
 
-    #'Gus': 'N:package:cb8231c7-5b8b-4baf-be00-5658133b4d16',
-    #'Joseph': 'N:package:3768b47c-5ded-4cf9-9bda-dc32f4520b40',
-    #'R_950': 'N:package:f950c9de-b775-4919-a867-02ae6a0c9370',
-    #'R_951': 'N:package:6ff9eb72-4d70-4122-83a1-704d87cfb6b2',
-    #'Ripley': 'N:package:401f556c-4747-4569-b1a8-9e6e50abf919',
-    #'T_488': 'N:package:7d49ad78-26a8-4726-b253-cf70a237ec42',
-    #'T_537': 'N:package:a48ffe55-be70-4fb6-af79-129bf8de2623',
-    #'T_571': 'N:package:666bcf72-ce45-46b2-9238-3ac1fa0403bd',
-    #'T_608': 'N:package:40da8a12-9f71-48a1-82f4-8c34ecbe0e14',
+    'Gus': 'N:package:cb8231c7-5b8b-4baf-be00-5658133b4d16',
+    'Joseph': 'N:package:3768b47c-5ded-4cf9-9bda-dc32f4520b40',
+    'R_950': 'N:package:f950c9de-b775-4919-a867-02ae6a0c9370',
+    'R_951': 'N:package:6ff9eb72-4d70-4122-83a1-704d87cfb6b2',
+    'Ripley': 'N:package:401f556c-4747-4569-b1a8-9e6e50abf919',
+    'T_488': 'N:package:7d49ad78-26a8-4726-b253-cf70a237ec42',
+    'T_537': 'N:package:a48ffe55-be70-4fb6-af79-129bf8de2623',
+    'T_571': 'N:package:666bcf72-ce45-46b2-9238-3ac1fa0403bd',
+    'T_608': 'N:package:40da8a12-9f71-48a1-82f4-8c34ecbe0e14',
     'UCD1': 'N:package:3d9de38c-5ab2-4cfe-8f5b-3ed64d1a6b6e',
     'UCD2': 'N:package:86985e61-c940-4404-afa7-94d0add8333f',
 }

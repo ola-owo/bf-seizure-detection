@@ -24,6 +24,7 @@ PTNAME_REGEX = re.compile(r'^[\w-]+$') # only allow letters, numbers, and "-" in
 
 patient = sys.argv[1]
 algo = sys.argv[2]
+
 if not re.match(PTNAME_REGEX, patient):
     raise Exception('Invalid patient name - must only contain letters, numbers, underscores (_), and/or dashes (-)') 
 
@@ -70,8 +71,7 @@ print 'Creating seizure diary for', patient
 print 'Classifier:', algo
 
 # Get seizures from database
-conn = sqlite3.connect('mini-diary.db')
-#conn = sqlite3.connect(DIARY_DB_NAME)
+conn = sqlite3.connect(DIARY_DB_NAME)
 c = conn.cursor()
 
 seizures = c.execute("SELECT start, end FROM " + patient + " WHERE type = '"+algo+"' ORDER BY end").fetchall()
@@ -167,4 +167,4 @@ layout = go.Layout(
     }
 )
 fig = go.Figure(data, layout)
-off.plot(fig, filename=(patient+'_diary'))
+off.plot(fig, filename=(patient+'_diary'), auto_open=False)
