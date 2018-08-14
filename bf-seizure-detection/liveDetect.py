@@ -67,7 +67,7 @@ def detect(bf, ptName, startTime, endTime, algo):
             pipeline(ptName, annotating=False, bf=bf)
 
         layer = ts.add_layer(PL_LAYER_NAME)
-        testTimeSeries(ts, layer, ptName, startTime=startTime, endTime=endTime, logging=False, annotating=True)
+        testTimeSeries(ts, layer, ptName, startTime=startTime, endTime=endTime, annotating=True)
         return endTime
     else:
         raise ValueError("Invalid classifier option '%s'" % algo)

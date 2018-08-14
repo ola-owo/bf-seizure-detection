@@ -14,3 +14,6 @@ diaries.db
 *_preds.csv
 *_key.csv
 roc-*.png
+
+# Log files
+*.out

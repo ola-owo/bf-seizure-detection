@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 '''
 Standalone usage:
-python testTimeSeries.py ptName layerID startTime [endTime] [annotate]
+python testTimeSeries.py ptName startTime [endTime] [annotate]
 '''
 import os
 import sys
@@ -17,7 +17,6 @@ from settings import (
 from sliceClips import sliceClips
 from train import train
 from tools import clearDir, NoPrint
-
 
 def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=True):
     '''
@@ -35,12 +34,11 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=T
     logfile = ptName + '_seizures.txt'
     ch = CHANNELS.get(ptName, None)
     freq = FREQs.get(ptName, DEFAULT_FREQ)
-    timeSegments = ts.segments()
 
     # Make sure startTime and endTime are valid
     if startTime is not None:
         if startTime < ts.start:
-            print 'Warning: startTime', startTime, 'is before the beginning of the Timeseries. Starting from the beginning of the timeseries...'
+            print 'Warning: startTime', startTime, 'is before the beginning of the Timeseries. Starting from the beginning...'
             startTime = None
         elif startTime > ts.end:
             print 'Warning: startTime', startTime, 'is after the end of the Timeseries. No data will be analyzed.'
@@ -48,45 +46,59 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=T
 
     if endTime is not None:
         if endTime > ts.end:
-            print 'Warning: endTime', endTime, 'is after the end of the Timeseries. Stopping at the end of the timeseries...'
+            print 'Warning: endTime', endTime, 'is after the end of the Timeseries. Stopping at the end...'
             endTime = None
         elif endTime < ts.start:
             print 'Warning: endTime', endTime, 'is before the beginning the Timeseries. No data will be analyzed.'
             return
 
+    #if startTime:
+    #    # Get the idx of the time segment to start at, and exclude all time before it
+    #    i = next(i for i, (a,b) in enumerate(segments) if b > startTime)
+    #    segments[:i] = []
+    #    startTime = max(startTime, segments[0][0])
+    #    segments[0] = (startTime, segments[0][1])
+    #else:
+    #    startTime = segments[0][0]
+    #
+    #if endTime:
+    #    # Same thing as with startTime
+    #    l = len(segments)
+    #    i = next(l-1 - i for i, (a,b) in enumerate(reversed(segments)) if a < endTime)
+    #    segments[i+1:] = []
+    #    endTime = min(endTime, segments[-1][1])
+    #    segments[-1] = (segments[-1][0], endTime)
+    #else:
+    #    endTime = segments[-1][1]
+    segments = ts.segments(startTime, endTime)
     if startTime:
-        # Get the idx of the time segment to start at, and exclude all time before it
-        i = next(i for i, (a,b) in enumerate(timeSegments) if b > startTime)
-        timeSegments[:i] = []
-        startTime = max(startTime, timeSegments[0][0])
-        timeSegments[0] = (startTime, timeSegments[0][1])
+        startTime = max(startTime, segments[0][0])
+        segments[0] = (startTime, segments[0][1])
     else:
-        startTime = timeSegments[0][0]
+        startTime = segments[0][0]
 
     if endTime:
-        # Same thing as with startTime
-        l = len(timeSegments)
-        i = next(l-1 - i for i, (a,b) in enumerate(reversed(timeSegments)) if a < endTime)
-        timeSegments[i+1:] = []
-        endTime = min(endTime, timeSegments[-1][1])
-        timeSegments[-1] = (timeSegments[-1][0], endTime)
+        endTime = min(endTime, segments[-1][1])
+        segments[-1] = (segments[-1][0], endTime)
     else:
-        endTime = timeSegments[-1][1]
+        endTime = segments[-1][1]
 
     pos = startTime
     szStarted = False
-    for timeSeg in timeSegments:
-        pos = max(pos, timeSeg[0])
-        while pos < timeSeg[1]:
+    for seg in segments:
+        pos = max(pos, seg[0])
+        while pos < seg[1]:
             print 'Testing position (%d, %d)' % (pos, pos + PL_CLIP_LENGTH)
 
             with NoPrint(): # suppress console output
                 annotFile = '%s/%s_timeseries.txt' % (annotDir, ptName)
                 makeAnnotFile([(pos, pos + PL_CLIP_LENGTH)], annotFile)
-                pullClips(annotFile, 'timeseries', ts, clipDir, ch)
+                times = pullClips(annotFile, 'timeseries', ts, clipDir, ch)
                 segs = sliceClips(clipDir, 'test', freq, ptName)
 
                 if segs: 
+                    clipStart = times[0][0]
+                    clipEnd = times[-1][1]
                     train('make_predictions', target=ptName)
                     submissions = [f for f in os.listdir(PL_ROOT + '/submissions') if ptName in f]
                     submissions.sort()
@@ -105,16 +117,16 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=T
             # write positive prediction to file, and (if annotating) mark clip
             # as a seizure and upload annonation to blackfynn.
             if meanScore > 0.5:
-                msg = '+ (%d, %d) %f\n' % (pos, pos + PL_CLIP_LENGTH, meanScore)
+                msg = '+ (%d, %d) %f\n' % (clipStart, clipEnd, meanScore)
                 if not szStarted:
                     szStarted = True
-                    szStart = pos
+                    szStart = clipStart
+                szEnd = clipEnd
 
             else:
-                msg = '- (%d, %d) %f\n' % (pos, pos + PL_CLIP_LENGTH, meanScore)
+                msg = '- (%d, %d) %f\n' % (clipStart, clipEnd, meanScore)
                 if szStarted:
                     szStarted = False
-                    szEnd = pos
                     if annotating:
                         layer.insert_annotation('Seizure',
                                                 start = szStart, end = szEnd)
@@ -150,11 +162,16 @@ if __name__ == '__main__':
 
     try:
         endTime = int(sys.argv[3])
-    except ValueError:
+    except (ValueError, IndexError):
         endTime = None
 
     bf = Blackfynn()
     ts = bf.get(TS_IDs[ptName])
     layer = ts.add_layer(PL_LAYER_NAME)
 
+    print 'Testing on patient:', ptName
+    if annotating:
+        print 'Annotating enabled'
+    else:
+        print 'Annotating disabled'
     testTimeSeries(ts, layer, ptName, startTime, endTime, annotating)
