@@ -74,7 +74,7 @@ def detect(bf, ptName, startTime, endTime, algo):
 
 def diary(bf, algo):
     '''
-    Updates the patient's seizure diary.
+    Update all patients' seizure diaries.
     This should automatically run daily.
     '''
     if algo == 'linelength':
@@ -86,7 +86,7 @@ def diary(bf, algo):
     else:
         raise ValueError("Invalid classifier option '%s'" % algo)
 
-    patients = sorted(TS_IDs.keys())
+    patients = sorted(TS_IDs)
     for pt in patients:
         print 'Updating seizure diary for', pt
-        updatePatient(bf, algo, pt)
+        updateDB(bf, pt, algo)

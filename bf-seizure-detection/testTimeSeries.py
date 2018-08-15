@@ -36,40 +36,28 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=T
     freq = FREQs.get(ptName, DEFAULT_FREQ)
 
     # Make sure startTime and endTime are valid
-    if startTime is not None:
-        if startTime < ts.start:
+    tsStart = ts.start
+    tsEnd = ts.end
+    if startTime is None:
+        startTime = tsStart
+    else:
+        if startTime < tsStart:
             print 'Warning: startTime', startTime, 'is before the beginning of the Timeseries. Starting from the beginning...'
-            startTime = None
-        elif startTime > ts.end:
+            startTime = tsStart
+        elif startTime > tsEnd:
             print 'Warning: startTime', startTime, 'is after the end of the Timeseries. No data will be analyzed.'
             return
 
-    if endTime is not None:
-        if endTime > ts.end:
+    if endTime is None:
+        endTime = tsEnd
+    else:
+        if endTime > tsEnd:
             print 'Warning: endTime', endTime, 'is after the end of the Timeseries. Stopping at the end...'
-            endTime = None
-        elif endTime < ts.start:
+            endTime = tsEnd
+        elif endTime < tsStart:
             print 'Warning: endTime', endTime, 'is before the beginning the Timeseries. No data will be analyzed.'
             return
 
-    #if startTime:
-    #    # Get the idx of the time segment to start at, and exclude all time before it
-    #    i = next(i for i, (a,b) in enumerate(segments) if b > startTime)
-    #    segments[:i] = []
-    #    startTime = max(startTime, segments[0][0])
-    #    segments[0] = (startTime, segments[0][1])
-    #else:
-    #    startTime = segments[0][0]
-    #
-    #if endTime:
-    #    # Same thing as with startTime
-    #    l = len(segments)
-    #    i = next(l-1 - i for i, (a,b) in enumerate(reversed(segments)) if a < endTime)
-    #    segments[i+1:] = []
-    #    endTime = min(endTime, segments[-1][1])
-    #    segments[-1] = (segments[-1][0], endTime)
-    #else:
-    #    endTime = segments[-1][1]
     segments = ts.segments(startTime, endTime)
     if startTime:
         startTime = max(startTime, segments[0][0])
@@ -111,6 +99,8 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=T
                 else:
                     # Predict negative if no segments were created
                     meanScore = 0.0
+                    clipStart = pos
+                    clipEnd = pos + PL_CLIP_LENGTH
 
             ###
             # If the mean prediction score is greater than 0.5, then

@@ -115,8 +115,7 @@ def updateDB(bf, patient, algo):
         raise ValueError("Invalid classifier '%s'" % algo)
 
     ts = bf.get(TS_IDs[patient])
-    conn = sqlite3.connect('mini-diary.db') # DEBUG
-    #conn = sqlite3.connect(DIARY_DB_NAME)
+    conn = sqlite3.connect(DIARY_DB_NAME)
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS ' + patient + ' (start INT, end INT, type TEXT)')
 
