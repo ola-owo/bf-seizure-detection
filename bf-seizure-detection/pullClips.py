@@ -6,8 +6,11 @@ Can be called standalone as:
 """
 
 import sys
+from time import sleep
+
 from blackfynn import Blackfynn
 import hickle
+from requests.exceptions import RequestException
 import scipy.io as sio
 
 def pullClips(annotFile, clipType, ts, outDir, channels=None, limit=0):
@@ -22,7 +25,10 @@ def pullClips(annotFile, clipType, ts, outDir, channels=None, limit=0):
         default (None) uses all channels
     limit: maximum number of annotations to use
         default (0) uses all annotations
+
+    Returns: list of (start,end) times for each clip (excluding gaps)
     '''
+    # TODO: return (start,end) times of each clip
 
     # Validate clip type
     if clipType == 'ictal':
@@ -47,10 +53,10 @@ def pullClips(annotFile, clipType, ts, outDir, channels=None, limit=0):
         annots = [map(int, annot.split()) for annot in annots]
 
     # pull and save each annotated clip
+    clipTimes = []
     num_saved = 0
     for annot in annots:
-        if not annot:
-            # ignore empty lines in file
+        if not annot: # ignore empty lines in file
             continue
         annotStart = annot[0]
         annotEnd = annot[1]
@@ -59,33 +65,43 @@ def pullClips(annotFile, clipType, ts, outDir, channels=None, limit=0):
         try:
             df = ts.get_data(start=annotStart, end=annotEnd, channels=channels, use_cache=False)
             # cache disabled to prevent malformed cache db errors
-        except KeyboardInterrupt:
-            raise
-        except Exception as e:
-            print 'Pull failed at', annotStart, '\n\t', e
+        except RequestException as e:
+            # catch Blackfynn server errors
+            print 'Server error (will retry):', e
+            sleep(2)
             continue
+        except:
+            print 'Pull failed at (%d, %d)' % (annotStart, annotEnd)
+            raise
+
+        # skip clip if 1 or more channels are missing data 
+        if df.empty or df.isnull().all().any():
+            continue
+        dfs = []
 
         # Handle gaps in data, if present
         # (Taken from Steve Baldassano's pipeline)
-        if df.empty: continue
-        dfs = []
         i = 0
         for j in range(1, df.shape[0]):
-            if i+1 == df.shape[0]: break
             dT = (df.iloc[j].name - df.iloc[j-1].name).total_seconds()
             if dT > 0.01: # if gap is too big, split into 2 clips
                 dfs.append(df.iloc[i:j])
                 i = j
+                if i+1 == df.shape[0]: break
         dfs.append(df.iloc[i:])
 
         # save clip(s)
         for df in dfs:
+            time = (df.iloc[0].name.value / 1000,
+                    df.iloc[-1].name.value / 1000)
+            clipTimes.append(time)
             array = df.transpose().values
             outfile = '%s/%s%d.hkl' % (outDir, outfile_prefix, num_saved+1)
             hickle.dump(array, outfile)
             num_saved += 1
 
     print('%d clips saved.' % num_saved)
+    return clipTimes
 
 if __name__ == '__main__':
     annotFile = sys.argv[1]

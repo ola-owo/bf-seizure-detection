@@ -59,5 +59,9 @@ def timeString(epoch_usecs):
 def getTime():
     'Get the current Unix time, in usecs'
     t = DT.datetime.utcnow()
-    t = (t - EPOCH).total_seconds() * 1000000
+    t = int((t - EPOCH).total_seconds()) * 1000000
     return t
+
+def toDateTime(t):
+    'convert epoch time to datetime object'
+    return DT.datetime.utcfromtimestamp(t/1000000)

@@ -50,10 +50,7 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
             startTime = None
         elif startTime > ts.end:
             print 'Warning: startTime', startTime, 'is after the end of the Timeseries. Exiting...'
-            if endTime is None:
-                return ts.end
-            else:
-                return endTime
+            return ts.end
 
     if endTime is not None:
         if endTime > ts.end:
@@ -89,7 +86,7 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
         endTime = ts.end
 
     # Make sure segments list starts at startTime and ends at endTime
-    segments = ts.segments(startTime, endTime)
+    segments = ts.segments(startTime, endTime+1)
     if not segments:
         print 'No data found between %d and %d.' % (startTime, endTime), \
               ' Exiting...'
@@ -165,7 +162,7 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
         # Go to next long term window
         windowStart = windowEnd
         windowEnd += longWindow
-    return endTime
+    return min(windowStart, endTime)
 
 def _trend(ts, windowStart, windowEnd):
     'Returns: trend value, list of clips with their line lengths'
@@ -173,7 +170,7 @@ def _trend(ts, windowStart, windowEnd):
     shortClips = [] # short term windows
 
     # Get time segments within the long-term window
-    windowSegs = ts.segments(windowStart, windowEnd)
+    windowSegs = ts.segments(windowStart, windowEnd+1)
     if not windowSegs:
         print 'No data within the window.'
         return None, []

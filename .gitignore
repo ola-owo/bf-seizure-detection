@@ -7,10 +7,17 @@
 live/
 pipeline-data/
 
-# Used by liveDetect
+# Seizure diaries
 diaries.db
+*.html
 
 # Metrics
 *_preds.csv
 *_key.csv
 roc-*.png
+
+# Log files
+*.out
+
+# Custom settings
+settings.py
