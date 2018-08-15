@@ -26,24 +26,23 @@ app.scripts.config.serve_locally = True
 dropdown = dcc.Dropdown(
     id='patient-switcher',
     options=[{'label': pt, 'value': pt} for pt in patients],
-    value=patients[1]
+    value=patients[1],
 )
 
 app.layout = html.Div(children=[
-    html.H1(children='Seizure Diary', style={'text-align':'center'}),
-    html.Label('Current patient:'),
-    dropdown,
+    html.H3(children='Current Patient:', style={'text-align':'center'}),
+    html.Div([dropdown], style={'width':'10em', 'margin':'0 auto 3em auto'}),
+
+    html.Div([
+        dcc.Graph(id='sz-hist',
+            style={'height':'100%', 'width':'45%'}),
+
+        dcc.Graph(id='sz-table',
+            style={'width':'45%'})
+    ], style={'display':'flex', 'justify-content':'space-between', 'height':'40vh', 'margin-bottom':'1%'}),
 
     dcc.Graph(id='sz-plot'),
-
-    dcc.Graph(id='sz-hist',
-        style={'height':'40vh', 'width':'45%', 'float':'left'}),
-
-    dcc.Graph(id='sz-table',
-        style={'width':'45%', 'float':'right'}),
-
-    html.Div(id='my-div')
-])
+], style={'background-color':'#f3f3f3', 'padding':'1%'})
 
 def makeScatter(seizureTimes, durations, label, height=0):
     timestamps = map(toDateTime, seizureTimes)
@@ -60,7 +59,8 @@ def makeScatter(seizureTimes, durations, label, height=0):
             'colorscale': 'Viridis',
             'cmin': 0,
             'cmax': 600,
-            'showscale': True
+            'showscale': True,
+            'size': 8 + np.log10(durations)
         }
     )
     return trace
@@ -159,7 +159,7 @@ def remakeScatter(patient):
 
     # Scatter plot layout
     layout = go.Layout(
-        title = 'Seizure History: ' + patient,
+        title = 'Seizure History',
         hovermode = 'closest',
         showlegend = False,
         plot_bgcolor = '#f3f3f3',
@@ -237,8 +237,7 @@ if __name__ == '__main__':
     if algo not in ('pipeline', 'linelength', 'ma_linelength'):
         raise ValueError("Invalid classifier '%s'" % algo)
 
-    conn = sqlite3.connect('mini-diary.db') # DEBUG
-    #conn = sqlite3.connect(DIARY_DB_NAME)
+    conn = sqlite3.connect(DIARY_DB_NAME)
     c = conn.cursor()
 
     allSeizures = {}
