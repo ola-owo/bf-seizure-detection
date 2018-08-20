@@ -56,11 +56,14 @@ def timeString(epoch_usecs):
     epoch_secs = epoch_usecs / 1000000.
     return DT.datetime.utcfromtimestamp(epoch_secs).strftime('%b %d %Y %X') + ' UTC (%d)' % epoch_usecs
 
+def toUsecs(dt):
+    'Convert datetime to epoch microseconds'
+    return int((dt - EPOCH).total_seconds() * 1000000)
+
 def getTime():
     'Get the current Unix time, in usecs'
-    t = DT.datetime.utcnow()
-    t = int((t - EPOCH).total_seconds()) * 1000000
-    return t
+    now = DT.datetime.utcnow()
+    return toUsecs(now)
 
 def toDateTime(t):
     'convert epoch time to datetime object'

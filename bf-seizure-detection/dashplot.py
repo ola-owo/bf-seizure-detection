@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import datetime as dt
+import json
 import sys
 import sqlite3
 
@@ -17,7 +18,7 @@ from settings import (
     DIARY_DB_NAME, GOLD_STD_LAYERS, PL_LAYER_NAME, LL_LAYER_NAME,
     LL_MA_LAYER_NAME, TS_IDs
 )
-from tools import toDateTime
+from tools import toDateTime, toUsecs
 
 patients = sorted(TS_IDs)
 app = dash.Dash()
@@ -30,18 +31,30 @@ dropdown = dcc.Dropdown(
 )
 
 app.layout = html.Div(children=[
-    html.H3(children='Current Patient:', style={'text-align':'center'}),
-    html.Div([dropdown], style={'width':'10em', 'margin':'0 auto 3em auto'}),
+    html.Div([
+        html.Label('Current Patient:', style={'text-align':'center'}),
+        dropdown,
+        html.Label('Date Range:'),
+        dcc.DatePickerRange(id='date-range',
+            initial_visible_month=dt.datetime.utcnow(),
+            start_date_placeholder_text='Start date',
+            end_date_placeholder_text='End date',
+            max_date_allowed=(dt.datetime.utcnow()+dt.timedelta(days=1)),
+            ),
+        html.Button('Reset', id='reset-button')
+        ], style={'width':'10em', 'margin':'0 auto 3em auto'}),
+
 
     html.Div([
-        dcc.Graph(id='sz-hist',
-            style={'height':'100%', 'width':'45%'}),
+        dcc.Graph(id='sz-hist', style={'height':'100%', 'width':'45%'}),
+        dcc.Graph(id='sz-table', style={'width':'45%'})
 
-        dcc.Graph(id='sz-table',
-            style={'width':'45%'})
-    ], style={'display':'flex', 'justify-content':'space-between', 'height':'40vh', 'margin-bottom':'1%'}),
+        ], style={'display':'flex', 'justify-content':'space-between',
+                  'height':'40vh', 'margin-bottom':'1%'}),
 
     dcc.Graph(id='sz-plot'),
+
+    html.Div(id='current-data', style={'display':'none'}),
 ], style={'background-color':'#f3f3f3', 'padding':'1%'})
 
 def makeScatter(seizureTimes, durations, label, height=0):
@@ -56,11 +69,13 @@ def makeScatter(seizureTimes, durations, label, height=0):
         marker = {
             'color': durations,
             'colorbar': {'title':'Duration (sec)'},
-            'colorscale': 'Viridis',
+            'colorscale': 'Electric',
+            'reversescale': True,
             'cmin': 0,
             'cmax': 600,
             'showscale': True,
-            'size': 8 + np.log10(durations)
+            'size': 8 + np.log10(durations),
+            'line': {'width':1, 'color':'black'}
         }
     )
     return trace
@@ -73,6 +88,7 @@ def seizuresPer(interval, seizures):
     days = float(dt.timedelta(
         microseconds = seizures[-1,0] - seizures[0,0]
     ).days)
+    if days == 0: days = 1.0 # prevents division by zero errors
 
     perDay = total / days
     if interval == 'day':
@@ -140,17 +156,69 @@ def updateDB(bf, patient, algo):
     conn.commit()
     conn.close()
 
+@app.callback(Output('date-range', 'start_date'),
+              [Input('reset-button', 'n_clicks')])
+def resetstartDate(_):
+    return None
+
+@app.callback(Output('date-range', 'end_date'),
+              [Input('reset-button', 'n_clicks')])
+def resetEndDate(_):
+    return None
+
+def timeFilter(arr, start_date, end_date):
+    'helper function for getData()'
+    if arr.size == 0: return arr
+
+    if start_date and end_date:
+        idx = np.logical_and((arr[:,0] >= start_date), (arr[:,0] < end_date))
+    elif start_date and not end_date:
+        idx = (arr[:,0] >= start_date)
+    elif not start_date and end_date:
+        idx = (arr[:,0] < end_date)
+    else:
+        idx = None
+    return arr[idx]
+
+@app.callback(Output('current-data', 'children'),
+              [Input('patient-switcher', 'value'),
+               Input('date-range', 'start_date'),
+               Input('date-range', 'end_date')])
+def getData(patient, start_str, end_str):
+    def parse(dateStr):
+        return dt.datetime.strptime(dateStr, '%Y-%m-%d')
+
+    if start_str:
+        start_time = toUsecs(parse(start_str))
+    else:
+        start_time = None
+    if end_str:
+        end_time = toUsecs(parse(end_str))
+    else:
+        end_time = None
+
+    liveSz = allSeizures[patient]['live']
+    goldSz = allSeizures[patient]['gold']
+
+    liveSz = timeFilter(liveSz, start_time, end_time)
+    goldSz = timeFilter(goldSz, start_time, end_time)
+
+    dct = {'live': liveSz.tolist(), 'gold': goldSz.tolist()}
+    return json.dumps(dct)
+
 @app.callback(Output('sz-plot', 'figure'),
-              [Input('patient-switcher', 'value')])
-def remakeScatter(patient):
-    seizures = allSeizures[patient]['live']
-    goldSeizures = allSeizures[patient]['gold']
+              [Input('current-data', 'children')])
+def remakeScatter(json_data):
+    data = json.loads(json_data)
+    seizures = np.array(data['live']).reshape(-1,2)
+    goldSeizures = np.array(data['gold']).reshape(-1,2)
+    print 'seizures size:', seizures.shape
 
     # Scatter plot data
     plot = []
     if seizures.size > 0:
         durations = (seizures[:,1] - seizures[:,0]) / 1000000
-        plot.append(makeScatter(seizures[:,0], durations, 'Detected seizure'))
+        plot.append(makeScatter(seizures[:,0], durations, 'Detected seizure', height=0.5))
         plot.append(go.Scatter())
     if goldSeizures.size > 0:
         goldDurations = (goldSeizures[:,1] - goldSeizures[:,0]) / 1000000
@@ -180,23 +248,28 @@ def remakeScatter(patient):
                     stepmode='backward'),
                 dict(step='all')
             ]},
-            rangeslider = {'visible': True},
+            #rangeslider = {'visible': True},
         ),
         yaxis = dict(
-            autorange = True,
+            range = (0,1.5),
             showgrid = False,
-            zeroline = True,
-            ticks = '',
-            showticklabels = False
+            zeroline = False,
+            #ticks = '',
+            showticklabels = True,
+            tickvals = (0.5, 1),
+            ticktext = ('Auto-detected', 'Pre-labeled')
         ),
     )
     scatter = go.Figure(plot, layout)
     return scatter
 
 @app.callback(Output('sz-hist', 'figure'),
-              [Input('patient-switcher', 'value')])
-def remakeHist(patient):
-    seizures = allSeizures[patient]['live']
+              [Input('current-data', 'children')])
+def remakeHist(json_data):
+    data = json.loads(json_data)
+    seizures = np.array(data['live']).reshape(-1,2)
+    goldSeizures = np.array(data['gold']).reshape(-1,2)
+
     if seizures.size > 0:
         durations = (seizures[:,1] - seizures[:,0]) / 1000000
     else:
@@ -213,29 +286,41 @@ def remakeHist(patient):
     hist = go.Figure([trace], layout)
     return hist
 
-@app.callback(Output('sz-table', 'figure'),
-              [Input('patient-switcher', 'value')])
-def remakeTable(patient):
-    seizures = allSeizures[patient]['live']
-    if seizures.size > 0:
-        durations = (seizures[:,1] - seizures[:,0]) / 1000000
-        data = [seizures.shape[0],
-         round(seizuresPer('day', seizures), 2),
-         round(seizuresPer('week', seizures), 2),
-         round(seizuresPer('month', seizures), 2)]
+def tableData(arr):
+    'Helper function for remakeTable()'
+    if arr.size > 0:
+        data = [arr.shape[0],
+                np.mean((arr[:,1] - arr[:,0]) / 1000000),
+                round(seizuresPer('day', arr), 2),
+                round(seizuresPer('week', arr), 2),
+                round(seizuresPer('month', arr), 2)]
     else:
-        data = [0,0,0,0]
+        data = [0,0,0,0,0]
+    return data
+
+@app.callback(Output('sz-table', 'figure'),
+              [Input('current-data', 'children')])
+def remakeTable(json_data):
+    data = json.loads(json_data)
+    seizures = np.array(data['live']).reshape(-1,2)
+    goldSeizures = np.array(data['gold']).reshape(-1,2)
 
     table = ff.create_table([
-        ['Total seizures', 'Seizures/day', 'Seizures/week', 'Seizures/month'],
-        data])
+        ['Annotation type', 'Total seizures', 'Mean length (sec)', 'Seizures/day', 'Seizures/week', 'Seizures/month'],
+        ['Pre-labeled'] + tableData(goldSeizures),
+        ['Auto-detected'] + tableData(seizures)
+    ])
     return table
 
 if __name__ == '__main__':
     # Load all seizures from DB, then start server
-    algo = sys.argv[1]
-    if algo not in ('pipeline', 'linelength', 'ma_linelength'):
-        raise ValueError("Invalid classifier '%s'" % algo)
+    try:
+        algo = sys.argv[1]
+        if algo not in ('pipeline', 'linelength', 'ma_linelength'):
+            raise ValueError("Invalid classifier '%s'" % algo)
+    except IndexError:
+        algo = 'pipeline'
+        print "No classifier selected, defaulting to 'pipeline'"
 
     conn = sqlite3.connect(DIARY_DB_NAME)
     c = conn.cursor()
