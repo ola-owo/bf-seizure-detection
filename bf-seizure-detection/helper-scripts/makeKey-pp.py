@@ -18,7 +18,6 @@ from settings import PL_ROOT, TS_IDs
 ptName = sys.argv[1]
 logFile = sys.argv[2]
 
-ICTAL_BUFFER = 30000000 # usec
 annotFile = PL_ROOT + '/annotations/' + ptName + '_annotations.txt'
 bf = Blackfynn()
 ts = bf.get(TS_IDs[ptName])
@@ -30,19 +29,18 @@ predFile = ptName + '_preds.csv'
 ptrn = re.compile(r'^([+-])\s+\((\d+),\s+(\d+)\)\s+((?:\d*\.)?\d+)$')
 
 def isIctal(start, end):
-    'Returns s: clip is a seizure, and w: clip is within ICTAL_BUFFER margin of a seizure'
+    'Returns s: clip is a seizure, and o: clip overlaps with a seizure'
     s = 0
-    w = 0
+    o = 0
     clipLength = end - start
     for ictal in ictals:
-        # Check if most of clip overlaps with seizure
-        if (start >= ictal[0] - ICTAL_BUFFER) and \
-             (end <= ictal[1] + ICTAL_BUFFER):
-            w = 1
-            if (min(end, ictal[1]) - max(start, ictal[0])) >= clipLength / 2:
+        if min(end, ictal[1]) - max(start, ictal[0]) > 0:
+            o = 1
+            # Check if entire clip is contained within seizure annotation
+            if start >= ictal[0] and end <= ictal[1]:
                 s = 1
             break
-    return s, w
+    return s, o
 
 # Read ictal annotations
 ictals = []
@@ -50,12 +48,12 @@ with open(annotFile, 'rU') as f:
     for line in f.readlines():
         ictals.append(map(int, line.strip().split()))
 
-# Create output key file
+# Create key csv file
 outfile_key = open(keyFile, 'wb')
 key_writer = csv.writer(outfile_key, lineterminator='\n')
 key_writer.writerow( ('clip', 'seizure', 'early') )
 
-# Create csv of predictions
+# Create predictions csv file
 outfile_pred = open(predFile, 'wb')
 pred_writer = csv.writer(outfile_pred, lineterminator='\n')
 pred_writer.writerow( ('clip', 'seizure', 'early') )
@@ -69,17 +67,13 @@ with open(logFile, 'rU') as f:
         endTime = int(match.group(3))
         score = float(match.group(4))
 
-        # Check if valid time period
-        #if not searchSegs(startTime): continue
+        # Check if clip is ictal 
+        s, o = isIctal(startTime, endTime)
+        if o and not s: continue
 
-        # Check if clip is in ictals
-        s, w = isIctal(startTime, endTime)
-        #if not s and w: continue # exclude clips within 5min of seizure start/end
-
-        # Write output files
+        # Write to output files
         clipname = '%s_%d-%d' % (ptName, startTime, endTime)
-        key_writer.writerow( (clipname, w) )
-        #key_writer.writerow( (clipname, s) )
+        key_writer.writerow( (clipname, s) )
         pred_writer.writerow( (clipname, pred, score) )
         n += 1
 
