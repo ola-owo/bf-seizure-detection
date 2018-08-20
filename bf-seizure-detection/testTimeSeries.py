@@ -104,8 +104,8 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=T
 
             ###
             # If the mean prediction score is greater than 0.5, then
-            # write positive prediction to file, and (if annotating) mark clip
-            # as a seizure and upload annonation to blackfynn.
+            # write positive prediction to file, and (if annotating)
+            # mark on Blackfynn as a seizure.
             if meanScore > 0.5:
                 msg = '+ (%d, %d) %f\n' % (clipStart, clipEnd, meanScore)
                 if not szStarted:
@@ -126,7 +126,7 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=T
 
             ### Delete temporary clip data
             # Annotation:
-            os.remove(annotDir + '/' + ptName + '_timeseries.txt')
+            os.remove(annotFile)
             # Submission file:
             try:
                 os.remove(predFile)
