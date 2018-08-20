@@ -7,6 +7,7 @@ python -m helper-scripts.metrics keyFile predFile ptName
 '''
 
 import sys
+import hickle
 from matplotlib import pyplot as plt
 import numpy as np
 import sklearn.metrics as skl_metrics
@@ -23,18 +24,22 @@ def printMetrics(keyFile, predFile, ptName):
 
     ### Generate ROC and AUC
     print 'Generating ROC curves...'
-    fp_sz, tp_sz, thresh_sz = skl_metrics.roc_curve(key, scores, drop_intermediate=False)
+    fp, tp, thresh = skl_metrics.roc_curve(key, scores, drop_intermediate=False)
 
-    auc_sz = skl_metrics.roc_auc_score(key, scores)
-    print 'Area under ROC (seizure):', auc_sz
+    auc = skl_metrics.roc_auc_score(key, scores)
+    print 'Area under ROC (seizure):', auc
 
-    plt.plot(fp_sz, tp_sz)
+    plt.plot(fp, tp)
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.ylim(ymin=0)
     plt.title('Seizure detection ROC for ' + ptName)
     plt.savefig('roc-%s.png' % ptName)
     plt.show()
+
+    ### Save ROC datapoints
+    data_out = {'fp':fp, 'tp':tp, 'thresh':thresh}
+    hickle.dump(data_out, ptName+'_roc.hkl')
 
     ### Other stats (precision, recall, f1, support)
     szStats = skl_metrics.classification_report(key, preds, target_names = ('Interictal', 'Ictal'))

@@ -18,6 +18,7 @@ from settings import PL_ROOT, TS_IDs
 ptName = sys.argv[1]
 logFile = sys.argv[2]
 
+ICTAL_BUFFER = 30000000 # usec
 annotFile = PL_ROOT + '/annotations/' + ptName + '_annotations.txt'
 bf = Blackfynn()
 ts = bf.get(TS_IDs[ptName])
@@ -29,18 +30,19 @@ predFile = ptName + '_preds.csv'
 ptrn = re.compile(r'^([+-])\s+\((\d+),\s+(\d+)\)\s+((?:\d*\.)?\d+)$')
 
 def isIctal(start, end):
-    'Returns s: clip is a seizure, and e: clip is an early seizure'
+    'Returns s: clip is a seizure, and w: clip is within ICTAL_BUFFER margin of a seizure'
     s = 0
-    e = 0
+    w = 0
     clipLength = end - start
     for ictal in ictals:
-        #if min(end, ictal[1]) - max(start, ictal[0]) >= clipLength / 2:
-        if min(end, ictal[1]) - max(start, ictal[0]) == clipLength:
-            s = 1
-            if start - ictal[0] < 15000000:
-                e = 1
+        # Check if most of clip overlaps with seizure
+        if (start >= ictal[0] - ICTAL_BUFFER) and \
+             (end <= ictal[1] + ICTAL_BUFFER):
+            w = 1
+            if (min(end, ictal[1]) - max(start, ictal[0])) >= clipLength / 2:
+                s = 1
             break
-    return s, e
+    return s, w
 
 # Read ictal annotations
 ictals = []
@@ -59,7 +61,7 @@ pred_writer = csv.writer(outfile_pred, lineterminator='\n')
 pred_writer.writerow( ('clip', 'seizure', 'early') )
 
 with open(logFile, 'rU') as f:
-    n = 1
+    n = 0
     for line in f.readlines():
         match = re.match(ptrn, line)
         pred = int(match.group(1) == '+')
@@ -71,13 +73,16 @@ with open(logFile, 'rU') as f:
         #if not searchSegs(startTime): continue
 
         # Check if clip is in ictals
-        s, _ = isIctal(startTime, endTime)
+        s, w = isIctal(startTime, endTime)
+        #if not s and w: continue # exclude clips within 5min of seizure start/end
 
         # Write output files
         clipname = '%s_%d-%d' % (ptName, startTime, endTime)
-        key_writer.writerow( (clipname, s) )
+        key_writer.writerow( (clipname, w) )
+        #key_writer.writerow( (clipname, s) )
         pred_writer.writerow( (clipname, pred, score) )
         n += 1
 
+print n, 'entries written.'
 outfile_key.close()
 outfile_pred.close()
