@@ -74,7 +74,8 @@ def diary(bf, algo):
 
     patients = sorted(TS_IDs)
     for pt in patients:
-        print 'Updating seizure diary for', pt
+        print 'Current patient:', pt
+        print 'Updating seizure diary'
         updateDB(bf, pt, algo)
 
         if algo == 'pipeline': # TODO: implement this for the other classifiers

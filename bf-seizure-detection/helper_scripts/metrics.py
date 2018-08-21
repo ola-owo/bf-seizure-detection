@@ -23,7 +23,7 @@ def printMetrics(keyFile, predFile, ptName, printReport=True):
     scores = predArray[:,1].flatten()
 
     ### Generate ROC and AUC
-    print 'Generating ROC curves...'
+    print 'Generating ROC curve...'
     fp, tp, thresh = skl_metrics.roc_curve(key, scores, drop_intermediate=False)
 
     auc = skl_metrics.roc_auc_score(key, scores)

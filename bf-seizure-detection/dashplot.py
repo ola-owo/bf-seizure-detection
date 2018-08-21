@@ -10,6 +10,7 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
+import hickle
 import numpy as np
 from plotly import figure_factory as ff
 import plotly.graph_objs as go
@@ -27,30 +28,30 @@ app.scripts.config.serve_locally = True
 dropdown = dcc.Dropdown(
     id='patient-switcher',
     options=[{'label': pt, 'value': pt} for pt in patients],
-    value=patients[1],
+    placeholder='Current patient'
 )
 
-app.layout = html.Div(children=[
-    html.Div([
-        html.Label('Current Patient:', style={'text-align':'center'}),
+app.layout = html.Div([
+    html.Div(id='top-row', children=[
+        dcc.Graph(id='sz-hist', style={'height':'100%', 'width':'30%'}),
         dropdown,
-        html.Label('Date Range:'),
-        dcc.DatePickerRange(id='date-range',
-            initial_visible_month=dt.datetime.utcnow(),
-            start_date_placeholder_text='Start date',
-            end_date_placeholder_text='End date',
-            max_date_allowed=(dt.datetime.utcnow()+dt.timedelta(days=1)),
-            ),
-        html.Button('Reset', id='reset-button')
-        ], style={'width':'10em', 'margin':'0 auto 3em auto'}),
+        html.Div(id='selector', children=[
+            #html.Label('Current Patient:'),
+            #html.Label('Date Range:'),
+            dcc.DatePickerRange(id='date-range',
+                initial_visible_month=dt.datetime.utcnow(),
+                start_date_placeholder_text='Start date',
+                end_date_placeholder_text='End date',
+                max_date_allowed=(dt.datetime.utcnow()+dt.timedelta(days=1)),
+                ),
+            html.Button('Reset', id='reset-button')
+        ], style={'height':'15%', 'width':'35%', 'display':'flex', 'justify-content':'space-around'}),
 
-
-    html.Div([
-        dcc.Graph(id='sz-hist', style={'height':'100%', 'width':'45%'}),
-        dcc.Graph(id='sz-table', style={'width':'45%'})
-
-        ], style={'display':'flex', 'justify-content':'space-between',
-                  'height':'40vh', 'margin-bottom':'1%'}),
+        dcc.Graph(id='sz-table', style={'width':'35%'}),
+        dcc.Graph(id='roc-plot', style={'height':'100%', 'width':'30%'})
+    ], style={'display':'flex', 'flex-flow':'column wrap', 'justify-content':'space-between',
+              'align-items':'flex-end', 'height':'40vh', 'margin-bottom':'1%',
+              'align-items':'center'}),
 
     dcc.Graph(id='sz-plot'),
 
@@ -185,6 +186,7 @@ def timeFilter(arr, start_date, end_date):
                Input('date-range', 'start_date'),
                Input('date-range', 'end_date')])
 def getData(patient, start_str, end_str):
+    'Update "current-data" div when switching patients or date range'
     def parse(dateStr):
         return dt.datetime.strptime(dateStr, '%Y-%m-%d')
 
@@ -197,18 +199,27 @@ def getData(patient, start_str, end_str):
     else:
         end_time = None
 
-    liveSz = allSeizures[patient]['live']
-    goldSz = allSeizures[patient]['gold']
+    if patient is None:
+        liveSz = []
+        goldSz = []
+    else:
+        liveSz = allSeizures[patient]['live']
+        liveSz = timeFilter(liveSz, start_time, end_time).tolist()
 
-    liveSz = timeFilter(liveSz, start_time, end_time)
-    goldSz = timeFilter(goldSz, start_time, end_time)
+        goldSz = allSeizures[patient]['gold']
+        goldSz = timeFilter(goldSz, start_time, end_time).tolist()
 
-    dct = {'live': liveSz.tolist(), 'gold': goldSz.tolist()}
+    if patient in allROCs:
+        roc = allROCs[patient]
+    else:
+        roc = None
+
+    dct = {'live': liveSz, 'gold': goldSz, 'roc': roc}
     return json.dumps(dct)
 
 @app.callback(Output('sz-plot', 'figure'),
               [Input('current-data', 'children')])
-def remakeScatter(json_data):
+def remakeSzPlot(json_data):
     data = json.loads(json_data)
     seizures = np.array(data['live']).reshape(-1,2)
     goldSeizures = np.array(data['gold']).reshape(-1,2)
@@ -290,7 +301,7 @@ def tableData(arr):
     'Helper function for remakeTable()'
     if arr.size > 0:
         data = [arr.shape[0],
-                np.mean((arr[:,1] - arr[:,0]) / 1000000),
+                round(np.mean((arr[:,1] - arr[:,0]) / 1000000), 2),
                 round(seizuresPer('day', arr), 2),
                 round(seizuresPer('week', arr), 2),
                 round(seizuresPer('month', arr), 2)]
@@ -306,11 +317,40 @@ def remakeTable(json_data):
     goldSeizures = np.array(data['gold']).reshape(-1,2)
 
     table = ff.create_table([
-        ['Annotation type', 'Total seizures', 'Mean length (sec)', 'Seizures/day', 'Seizures/week', 'Seizures/month'],
+        ['Annotation<br>type', 'Total', 'Mean length<br>(sec)', 'Avg/day', 'Avg/week', 'Avg/month'],
         ['Pre-labeled'] + tableData(goldSeizures),
         ['Auto-detected'] + tableData(seizures)
-    ])
+    ], index=True, index_title='TYPE')
     return table
+
+@app.callback(Output('roc-plot', 'figure'),
+              [Input('current-data', 'children')])
+def remakeROC(json_data):
+    data = json.loads(json_data)
+    if data['roc'] is None:
+        xdata = ydata = []
+    else:
+        xdata = data['roc']['fp']
+        ydata = data['roc']['tp']
+
+    trace = go.Scatter(
+        x = xdata,
+        y = ydata,
+        hoverinfo = 'x+y',
+        name = 'ROC',
+        mode = 'lines'
+    )
+
+    # Scatter plot layout
+    layout = go.Layout(
+        title = 'ROC',
+        hovermode = 'closest',
+        #plot_bgcolor = '#f3f3f3',
+        xaxis = {'title': 'False positive rate'},
+        yaxis = {'title': 'True positive rate'}
+    )
+    scatter = go.Figure([trace], layout)
+    return scatter
 
 if __name__ == '__main__':
     # Load all seizures from DB, then start server
@@ -326,7 +366,9 @@ if __name__ == '__main__':
     c = conn.cursor()
 
     allSeizures = {}
+    allROCs = {}
     for patient in patients:
+        # Load seizures
         goldSz = c.execute("SELECT start, end FROM " + patient + \
             " WHERE type = 'gold'").fetchall()
         liveSz = c.execute("SELECT start, end FROM " + patient + \
@@ -335,6 +377,14 @@ if __name__ == '__main__':
         allSeizures[patient] = {}
         allSeizures[patient]['gold'] = np.array(goldSz)
         allSeizures[patient]['live'] = np.array(liveSz)
+
+        # Load ROC data
+        try:
+            roc = hickle.load(patient + '_roc.hkl')
+            for k,v in roc.items(): roc[k] = v.tolist()
+            allROCs[patient] = roc
+        except:
+            pass
 
     c.close()
     conn.commit()

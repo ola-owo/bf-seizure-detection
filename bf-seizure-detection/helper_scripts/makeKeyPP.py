@@ -13,7 +13,7 @@ import sys
 
 from settings import PL_ROOT, TS_IDs
 
-def isIctal(start, end):
+def isIctal(ictals, start, end):
     'Returns s: clip is a seizure, and o: clip overlaps with a seizure'
     s = 0
     o = 0
@@ -60,7 +60,7 @@ def makeKey(ptName, logFile):
             score = float(match.group(4))
 
             # Check if clip is ictal 
-            s, o = isIctal(startTime, endTime)
+            s, o = isIctal(ictals, startTime, endTime)
             if o and not s: continue
 
             # Write to output files
