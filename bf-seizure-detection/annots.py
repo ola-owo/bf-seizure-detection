@@ -13,15 +13,13 @@ from blackfynn import Blackfynn
 from settings import DATA_RATIO, GOLD_STD_LAYERS, PL_ROOT, TIME_BUFFER, TS_IDs
 
 def makeAnnotFile(annotations, filename):
-    '''
-    Write annotations to file filename.
-    '''
+    'Write a list of annotations to file filename.'
 
     if not annotations:
         print 'makeAnnotFile(): no annotations to write'
         return
 
-    with open(filename, 'wt') as f:
+    with open(filename, 'w') as f:
         n = 0
         for annot in annotations:
             f.write('%d %d\n' % (annot[0], annot[1]))
@@ -30,12 +28,9 @@ def makeAnnotFile(annotations, filename):
     print '%d annotations written to %s.' % (n, filename)
 
 def getIctalAnnots(layer):
-    '''
-    Get ictal annotations from Layer object slayer
-    '''
+    'getIctalAnnots(layer) --> list of annotation (start,end) tuples'
 
-    'getIctalAnnots(layer) --> list of annotation tuples from layer'
-    anns = map(lambda x: (x.start, x.end), layer.annotations())
+    anns = [(a.start, a.end) for a in layer.annotations()]
     return anns
 
 def getInterictalAnnots(ictals, segments):
@@ -44,6 +39,7 @@ def getInterictalAnnots(ictals, segments):
 
     ictals: list of ictal annotations
     segments: list of all (non-empty) periods within the timeseries
+    Returns: list of annotation (start, end) tuples
     '''
     interictals = segments
     start = segments[0][0]

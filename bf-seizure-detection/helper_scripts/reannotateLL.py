@@ -1,7 +1,7 @@
 '''
 Re-annotate basic line length detector using a custom threshold.
 
-Usage: python -m helper-scripts.reannotateLL ptName logfile threshold
+Usage: python -m helper_scripts.reannotateLL ptName logfile threshold
 '''
 
 import sys

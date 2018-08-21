@@ -12,6 +12,7 @@ diaries.db
 *.html
 
 # Metrics
+*.hkl
 *_preds.csv
 *_key.csv
 roc-*.png

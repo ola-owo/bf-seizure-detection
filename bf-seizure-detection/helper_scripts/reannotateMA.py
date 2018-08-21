@@ -2,7 +2,7 @@
 Annotate MA line length detector from an output log,
 using a custom threshold multiplier
 
-Usage: python -m helper-scripts.reannotateLLNew ptName logfile threshold
+Usage: python -m helper_scripts.reannotateLLNew ptName logfile threshold
 '''
 
 import sys

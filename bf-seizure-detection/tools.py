@@ -31,12 +31,10 @@ def clearDir(dirName):
 
 class NoPrint:
     '''
-    Suppress print output.
-
-    Example:
+    Suppress print output. Example:
         with NoPrint():
-            doStuff()
-            doMoreStuff()
+            dontPrintThis()
+        doPrintThis()
     '''
 
     def __enter__(self):

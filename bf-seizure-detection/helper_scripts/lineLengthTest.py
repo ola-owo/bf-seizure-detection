@@ -3,7 +3,7 @@
 Find line lengths at certain times, in order to figure out threshold values
 for the basic line length detector.
 
-Usage: python -m helper-scripts.lineLengthTest ptName [startTime]
+Usage: python -m helper_scripts.lineLengthTest ptName [startTime]
 '''
 import os
 import sys

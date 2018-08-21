@@ -2,7 +2,7 @@
 Get patients' annotations from Blackfynn and rewrite their seizure diary
 database entries.
 
-Usage: python -m helper-scripts.rewriteDiary algo
+Usage: python -m helper_scripts.rewriteDiary algo
 '''
 
 import sys

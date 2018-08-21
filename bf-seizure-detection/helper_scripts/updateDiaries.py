@@ -1,7 +1,7 @@
 '''
 Manually rebuild seizure diary database.
 
-Usage: python -m helper-scripts.updateDiaries algo
+Usage: python -m helper_scripts.updateDiaries algo
 '''
 
 import sys

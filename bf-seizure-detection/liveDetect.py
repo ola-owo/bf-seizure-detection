@@ -2,32 +2,19 @@
 '''
 Automatically checks for new data and tests it for seizures
 '''
-import datetime as dt
-import glob
-import os.path
+from glob import glob
 import re
 
-from blackfynn import Blackfynn
-from matplotlib import pyplot as plt
-from matplotlib.dates import DateFormatter, date2num
-import numpy as np
-
-# Workaround for blackfynn server errors:
-from requests.exceptions import RequestException
-
+import annots
 from dashplot import updateDB
+from helper_scripts import makeKeyPP, metrics
 from lineLength import lineLength
 from lineLengthMA import lineLength as maLineLength
 from pipeline import pipeline
 from settings import (
-    CHANNELS, DIARY_DB_NAME, GOLD_STD_LAYERS, LIVE_UPDATE_TIMES, LL_LAYER_NAME,
-    LL_MA_LAYER_NAME, PL_LAYER_NAME, PL_ROOT, SZ_PLOT_ROOT, TS_IDs
+    GOLD_STD_LAYERS, LL_LAYER_NAME, LL_MA_LAYER_NAME, PL_LAYER_NAME, PL_ROOT, TS_IDs
 )
 from testTimeSeries import testTimeSeries
-from tools import makeDir
-
-# Allows pyplot to work without a display:
-plt.switch_backend('agg')
 
 PTNAME_REGEX = re.compile(r'^[\w-]+$') # only allow letters, numbers, and "-" in patient name
 
@@ -52,7 +39,6 @@ def detect(bf, ptName, startTime, endTime, algo):
         print "Error getting timeseries for patient '" + ptName + "':"
         print e
         return startTime
-    ch = CHANNELS.get(ptName, None)
 
     if algo == 'linelength':
         lineLength(ptName, startTime, endTime, append=True, layerName=LL_LAYER_NAME)
@@ -62,7 +48,7 @@ def detect(bf, ptName, startTime, endTime, algo):
         return t
     elif algo == 'pipeline':
         # Train liveAlgo if classifier doesn't already exist
-        classifier_exists = bool(glob.glob(PL_ROOT + '/data-cache/classifier_' + ptName + '_*'))
+        classifier_exists = bool(glob(PL_ROOT + '/data-cache/classifier_' + ptName + '_*'))
         if not classifier_exists:
             pipeline(ptName, annotating=False, bf=bf)
 
@@ -90,3 +76,31 @@ def diary(bf, algo):
     for pt in patients:
         print 'Updating seizure diary for', pt
         updateDB(bf, pt, algo)
+
+        if algo == 'pipeline': # TODO: implement this for the other classifiers
+            print 'Updating performance stats'
+            ts = bf.get(TS_IDs[pt])
+
+            # update ictal annotations file
+            if pt not in GOLD_STD_LAYERS:
+                print 'Skipping patient', pt, '(no gold standard layer)'
+                continue
+            goldLayer = ts.get_layer(GOLD_STD_LAYERS[pt])
+            anns = annots.getIctalAnnots(goldLayer)
+            if not anns:
+                print 'Skipping patient', pt, '(no gold standard annotations)'
+                continue
+            annots.makeAnnotFile(anns, '%s/%s_annotations.txt' % (annotDir, pt))
+
+            # run makeKey
+            logFile = pt + '_seizures.txt'
+            try:
+                makeKeyPP.makeKey(pt, logFile)
+            except IOError:
+                print 'Skipping patient', pt, '(log file not found)'
+                continue
+
+            # run metrics and save [patient]_roc.hkl
+            keyFile = pt + '_key.csv'
+            predFile = pt + '_preds.csv'
+            metrics.printMetrics(keyFile, predFile, pt, printReport=False)
