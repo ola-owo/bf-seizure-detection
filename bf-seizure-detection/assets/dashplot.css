@@ -1,0 +1,42 @@
+#_dash-app-content > div {
+  padding: 1%;
+  background-color: #f3f3f3;
+  }
+
+#top-row {
+  height: 40vh;
+  margin-bottom: 1%;
+  display: flex;
+  flex-flow: column wrap;
+  align-content: space-between;
+  align-items: center;
+  justify-content: space-between;
+  }
+
+#sz-hist {
+  height: 100%;
+  width: 30%;
+  }
+
+#patient-switcher {
+  width: 10em;
+  }
+
+#selector {
+  /* width: 35%; */
+  display: flex;
+  justify-content: space-around;
+  }
+
+#sz-table {
+  /* width: 35%; */
+  }
+
+#roc-plot {
+  height: 100%;
+  width: 30%;
+  }
+
+#current-data {
+  display: none;
+  }

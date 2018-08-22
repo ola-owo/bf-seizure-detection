@@ -33,7 +33,7 @@ dropdown = dcc.Dropdown(
 
 app.layout = html.Div([
     html.Div(id='top-row', children=[
-        dcc.Graph(id='sz-hist', style={'height':'100%', 'width':'30%'}),
+        dcc.Graph(id='sz-hist'),
         dropdown,
         html.Div(id='selector', children=[
             #html.Label('Current Patient:'),
@@ -45,18 +45,16 @@ app.layout = html.Div([
                 max_date_allowed=(dt.datetime.utcnow()+dt.timedelta(days=1)),
                 ),
             html.Button('Reset', id='reset-button')
-        ], style={'height':'15%', 'width':'35%', 'display':'flex', 'justify-content':'space-around'}),
+            ]),
 
-        dcc.Graph(id='sz-table', style={'width':'35%'}),
-        dcc.Graph(id='roc-plot', style={'height':'100%', 'width':'30%'})
-    ], style={'display':'flex', 'flex-flow':'column wrap', 'justify-content':'space-between',
-              'align-items':'flex-end', 'height':'40vh', 'margin-bottom':'1%',
-              'align-items':'center'}),
+        dcc.Graph(id='sz-table'),
+        dcc.Graph(id='roc-plot')
+        ]),
 
     dcc.Graph(id='sz-plot'),
 
-    html.Div(id='current-data', style={'display':'none'}),
-], style={'background-color':'#f3f3f3', 'padding':'1%'})
+    html.Div(id='current-data'),
+])
 
 def makeScatter(seizureTimes, durations, label, height=0):
     timestamps = map(toDateTime, seizureTimes)
@@ -241,6 +239,7 @@ def remakeSzPlot(json_data):
         title = 'Seizure History',
         hovermode = 'closest',
         showlegend = False,
+        margin = {'l':100, 'r':0},
         plot_bgcolor = '#f3f3f3',
         xaxis = dict(
             title = 'Time (UTC)',
@@ -260,15 +259,18 @@ def remakeSzPlot(json_data):
                 dict(step='all')
             ]},
             #rangeslider = {'visible': True},
+            gridcolor = '#ccc',
+            gridwidth = 2,
         ),
         yaxis = dict(
+            title = 'Annotation type',
             range = (0,1.5),
             showgrid = False,
-            zeroline = False,
             #ticks = '',
             showticklabels = True,
             tickvals = (0.5, 1),
-            ticktext = ('Auto-detected', 'Pre-labeled')
+            ticktext = ('Auto-detected', 'Pre-labeled'),
+            tickangle = -45
         ),
     )
     scatter = go.Figure(plot, layout)
@@ -345,7 +347,6 @@ def remakeROC(json_data):
     layout = go.Layout(
         title = 'ROC',
         hovermode = 'closest',
-        #plot_bgcolor = '#f3f3f3',
         xaxis = {'title': 'False positive rate'},
         yaxis = {'title': 'True positive rate'}
     )
