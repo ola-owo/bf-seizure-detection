@@ -24,7 +24,6 @@ from tools import getTime, timeString
 import liveDetect
 import datetime as DT
 
-# BUG WORKAROUND: Initialize blackfynn here and pass it to the liveDetect functions
 from blackfynn import Blackfynn
 bf = Blackfynn()
 

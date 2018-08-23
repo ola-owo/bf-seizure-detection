@@ -79,6 +79,10 @@ def pullClips(annotFile, clipType, ts, outDir, channels=None, limit=0):
             continue
         dfs = []
 
+        # (WORKAROUND) scale ucd1 data after 7/31/18 22:11:28 by 1000
+        if ts.name == 'UCD1' and annotStart >= 1533075088572912:
+            df *= 1000
+
         # Handle gaps in data, if present
         # (Taken from Steve Baldassano's pipeline)
         i = 0
