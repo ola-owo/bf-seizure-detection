@@ -9,7 +9,7 @@ import sqlite3
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import hickle
 import numpy as np
 from plotly import figure_factory as ff
@@ -34,20 +34,14 @@ dropdown = dcc.Dropdown(
 app.layout = html.Div([
     html.Div(id='top-row', children=[
         dcc.Graph(id='sz-hist'),
-        dropdown,
+
+
         html.Div(id='selector', children=[
-            #html.Label('Current Patient:'),
-            #html.Label('Date Range:'),
-            dcc.DatePickerRange(id='date-range',
-                initial_visible_month=dt.datetime.utcnow(),
-                start_date_placeholder_text='Start date',
-                end_date_placeholder_text='End date',
-                max_date_allowed=(dt.datetime.utcnow()+dt.timedelta(days=1)),
-                ),
-            html.Button('Reset', id='reset-button')
-            ]),
+            dropdown,
+            html.Button('Reset Zoom', id='reset-button')]),
 
         dcc.Graph(id='sz-table'),
+
         dcc.Graph(id='roc-plot')
         ]),
 
@@ -65,6 +59,7 @@ def makeScatter(seizureTimes, durations, label, height=0):
         mode = 'markers',
         name = label,
         text = ['Duration: %d s'%d for d in durations],
+        unselected = {'marker': {'opacity': 0.3}},
         marker = {
             'color': durations,
             'colorbar': {'title':'Duration (sec)'},
@@ -74,7 +69,8 @@ def makeScatter(seizureTimes, durations, label, height=0):
             'cmax': 600,
             'showscale': True,
             'size': 8 + np.log10(durations),
-            'line': {'width':1, 'color':'black'}
+            'line': {'width':1, 'color':'black'},
+            'opacity': 1
         }
     )
     return trace
@@ -155,57 +151,30 @@ def updateDB(bf, patient, algo):
     conn.commit()
     conn.close()
 
-@app.callback(Output('date-range', 'start_date'),
-              [Input('reset-button', 'n_clicks')])
-def resetstartDate(_):
-    return None
-
-@app.callback(Output('date-range', 'end_date'),
-              [Input('reset-button', 'n_clicks')])
-def resetEndDate(_):
-    return None
-
-def timeFilter(arr, start_date, end_date):
-    'helper function for getData()'
-    if arr.size == 0: return arr
-
-    if start_date and end_date:
-        idx = np.logical_and((arr[:,0] >= start_date), (arr[:,0] < end_date))
-    elif start_date and not end_date:
-        idx = (arr[:,0] >= start_date)
-    elif not start_date and end_date:
-        idx = (arr[:,0] < end_date)
-    else:
-        idx = None
-    return arr[idx]
-
 @app.callback(Output('current-data', 'children'),
               [Input('patient-switcher', 'value'),
-               Input('date-range', 'start_date'),
-               Input('date-range', 'end_date')])
-def getData(patient, start_str, end_str):
+               Input('sz-plot', 'selectedData')])
+def getData(patient, selectedData):
     'Update "current-data" div when switching patients or date range'
-    def parse(dateStr):
-        return dt.datetime.strptime(dateStr, '%Y-%m-%d')
-
-    if start_str:
-        start_time = toUsecs(parse(start_str))
-    else:
-        start_time = None
-    if end_str:
-        end_time = toUsecs(parse(end_str))
-    else:
-        end_time = None
+    def parse(p):
+        'convert a datapoint to a (start,end) tuple (in usecs)'
+        a = toUsecs(dt.datetime.strptime(p['x'], '%Y-%m-%d %H:%M:%S'))
+        delta = int(p['text'].split()[1]) * 1000000 # parse seizure duration from hover text
+        b = a + delta
+        return (a, b)
 
     if patient is None:
         liveSz = []
         goldSz = []
     else:
-        liveSz = allSeizures[patient]['live']
-        liveSz = timeFilter(liveSz, start_time, end_time).tolist()
-
-        goldSz = allSeizures[patient]['gold']
-        goldSz = timeFilter(goldSz, start_time, end_time).tolist()
+        if selectedData:
+            liveSz = [parse(p) for p in selectedData['points']
+                      if p['curveNumber'] == 0]
+            goldSz = [parse(p) for p in selectedData['points']
+                      if p['curveNumber'] == 2]
+        else: # no selection made
+            liveSz = allSeizures[patient]['live'].tolist()
+            goldSz = allSeizures[patient]['gold'].tolist()
 
     if patient in allROCs:
         roc = allROCs[patient]
@@ -215,13 +184,18 @@ def getData(patient, start_str, end_str):
     dct = {'live': liveSz, 'gold': goldSz, 'roc': roc}
     return json.dumps(dct)
 
+@app.callback(Output('sz-plot', 'selectedData'),
+              [Input('reset-button', 'n_clicks')],
+              [State('patient-switcher', 'value')])
+def reset(_, patient):
+    return None
+
 @app.callback(Output('sz-plot', 'figure'),
               [Input('current-data', 'children')])
 def remakeSzPlot(json_data):
     data = json.loads(json_data)
     seizures = np.array(data['live']).reshape(-1,2)
     goldSeizures = np.array(data['gold']).reshape(-1,2)
-    print 'seizures size:', seizures.shape
 
     # Scatter plot data
     plot = []
@@ -238,6 +212,8 @@ def remakeSzPlot(json_data):
     layout = go.Layout(
         title = 'Seizure History',
         hovermode = 'closest',
+        dragmode = 'select',
+        selectdirection = 'h',
         showlegend = False,
         margin = {'l':100, 'r':0},
         plot_bgcolor = '#f3f3f3',
@@ -264,6 +240,7 @@ def remakeSzPlot(json_data):
         ),
         yaxis = dict(
             title = 'Annotation type',
+            fixedrange = True,
             range = (0,1.5),
             showgrid = False,
             #ticks = '',

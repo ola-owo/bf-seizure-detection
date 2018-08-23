@@ -38,7 +38,7 @@ def pipeline(ptName, annotating=True, startTime=None, endTime=None, bf=None):
     freq = FREQs.get(ptName, DEFAULT_FREQ)
 
     ### Get patient-specific settings
-    if bf is None: # WORKAROUND: see crontest.py
+    if bf is None: # WORKAROUND: see cron.py
         bf = Blackfynn()
     ts = bf.get(TS_IDs[ptName])
 
