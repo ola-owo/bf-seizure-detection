@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 '''
 Line length seizure detector
 
@@ -35,18 +35,18 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
     # Make sure startTime and endTime are valid
     if startTime is not None:
         if startTime < ts.start:
-            print 'Warning: startTime', startTime, 'is earlier than the beginning of the Timeseries. Ignoring startTime argument...'
+            print('Warning: startTime', startTime, 'is earlier than the beginning of the Timeseries. Ignoring startTime argument...')
             startTime = None
         elif startTime > ts.end:
-            print 'Warning: startTime', startTime, 'is after the end of the Timeseries. No data will be analyzed.'
+            print('Warning: startTime', startTime, 'is after the end of the Timeseries. No data will be analyzed.')
             return
 
     if endTime is not None:
         if endTime > ts.end:
-            print 'Warning: endTime', endTime, 'is later than the end of the Timeseries. Ignoring endTime argument...'
+            print('Warning: endTime', endTime, 'is later than the end of the Timeseries. Ignoring endTime argument...')
             endTime = None
         elif endTime < ts.start:
-            print 'Warning: endTime', endTime, 'is before the beginning the Timeseries. No data will be analyzed.'
+            print('Warning: endTime', endTime, 'is before the beginning the Timeseries. No data will be analyzed.')
             return
 
     # Get segments
@@ -67,7 +67,7 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
         except StopIteration:
             pass
         startTime = max(segments[0][0], startTime)
-        print 'start time:', startTime
+        print('start time:', startTime)
         segments[0] = (startTime, segments[0][1])
 
     # Same thing with end time:
@@ -81,20 +81,20 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
         except StopIteration:
             pass
         endTime = min(segments[-1][1], endTime)
-        print 'end time:', endTime
+        print('end time:', endTime)
         segments[-1] = (segments[-1][0], endTime)
 
     try:
         # Get layer if it already exists
         layer = ts.get_layer(layerName)
         if append:
-            print "Appending to layer '%s'" % layerName
+            print("Appending to layer '%s'" % layerName)
         else:
-            print "Overwriting layer '%s'" % layerName
+            print("Overwriting layer '%s'" % layerName)
             layer.delete()
             layer = ts.add_layer(layerName)
     except:
-        print "Creating layer '%s'" % layerName
+        print("Creating layer '%s'" % layerName)
         layer = ts.add_layer(layerName)
 
     pos = segments[0][0]
@@ -107,11 +107,11 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
                 # note: actual clip length may be shorter than LL_CLIP_LENGTH
             except RequestException as e:
                 # catch Blackfynn server errors
-                print 'Server error (will retry):', e
+                print('Server error (will retry):', e)
                 sleep(2)
                 continue
             except Exception as e:
-                print 'Pull failed:', e
+                print('Pull failed:', e)
                 pos += LL_CLIP_LENGTH
                 continue
             if clip.empty or clip.isnull().all().any():
@@ -131,11 +131,11 @@ def lineLength(ptName, ch, startTime=None, endTime=None, append=False, layerName
             l = _length(clip)
 
             if l > threshold:
-                print '+ %f (%d, %d)' % (l, startTime, endTime)
+                print('+ %f (%d, %d)' % (l, startTime, endTime))
                 sys.stdout.flush()
                 layer.insert_annotation('Possible seizure', start=startTime, end=endTime)
             else:
-                print '- %f (%d, %d)' % (l, startTime, endTime)
+                print('- %f (%d, %d)' % (l, startTime, endTime))
                 sys.stdout.flush()
 
             pos += LL_CLIP_LENGTH

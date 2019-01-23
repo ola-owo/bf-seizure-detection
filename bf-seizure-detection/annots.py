@@ -1,22 +1,22 @@
 '''
 Generates annotation files from a given annotation layer.
 This script can also be called standalone with:
-> python makeAnnonationFile.py ptName [layerID]
+> python annots.py ptName [layerID]
 '''
 
-import os
 from random import shuffle
 import sys
 
 from blackfynn import Blackfynn
 
 from settings import DATA_RATIO, GOLD_STD_LAYERS, PL_ROOT, TIME_BUFFER, TS_IDs
+from functools import reduce
 
 def makeAnnotFile(annotations, filename):
     'Write a list of annotations to file filename.'
 
     if not annotations:
-        print 'makeAnnotFile(): no annotations to write'
+        print('makeAnnotFile(): no annotations to write')
         return
 
     with open(filename, 'w') as f:
@@ -25,7 +25,7 @@ def makeAnnotFile(annotations, filename):
             f.write('%d %d\n' % (annot[0], annot[1]))
             n += 1
 
-    print '%d annotations written to %s.' % (n, filename)
+    print('%d annotations written to %s.' % (n, filename))
 
 def getIctalAnnots(layer):
     'getIctalAnnots(layer) --> list of annotation (start,end) tuples'
@@ -71,20 +71,20 @@ def getInterictalAnnots(ictals, segments):
     interictalsCopy = interictals
     shuffle(interictalsCopy)
     interictals = []
-    totalIctalTime = reduce(lambda acc, (a,b): b - a + acc, ictals, 0)
+    totalIctalTime = reduce(lambda acc, ab: ab[1] - ab[0] + acc, ictals, 0)
     totalInterTime = 0
 
     for inter in interictalsCopy:
         interictals.append(inter)
         totalInterTime += (inter[1] - inter[0])
-        if totalInterTime / totalIctalTime >= DATA_RATIO:
+        if totalInterTime // totalIctalTime >= DATA_RATIO:
             diff = totalInterTime % totalIctalTime
             interictals[-1] = (inter[0], inter[1] - diff)
             totalInterTime -= diff
             break
 
-    print 'total ictal time:', totalIctalTime
-    print 'total interictal:', totalInterTime
+    print('total ictal time:', totalIctalTime)
+    print('total interictal:', totalInterTime)
     return interictals
 
 if __name__ == '__main__':

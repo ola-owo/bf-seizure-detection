@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 '''
 Compute metrics for a classifier on one or more patients and plot the ROC.
 
@@ -15,7 +15,7 @@ import sklearn.metrics as skl_metrics
 def printMetrics(keyFile, predFile, ptName, printReport=True):
     
     ### Read answer key and predictions
-    print 'Reading predictions and answer key...'
+    print('Reading predictions and answer key...')
     key = np.loadtxt(keyFile, delimiter=',', skiprows=1, usecols=1)
     predArray = np.loadtxt(predFile, delimiter=',', skiprows=1, usecols=(1,2))
 
@@ -23,11 +23,11 @@ def printMetrics(keyFile, predFile, ptName, printReport=True):
     scores = predArray[:,1].flatten()
 
     ### Generate ROC and AUC
-    print 'Generating ROC curve...'
+    print('Generating ROC curve...')
     fp, tp, thresh = skl_metrics.roc_curve(key, scores, drop_intermediate=False)
 
     auc = skl_metrics.roc_auc_score(key, scores)
-    print 'Area under ROC (seizure):', auc
+    print('Area under ROC (seizure):', auc)
 
     # plt.plot(fp, tp)
     # plt.xlabel('False Positive Rate')
@@ -44,9 +44,9 @@ def printMetrics(keyFile, predFile, ptName, printReport=True):
     if printReport:
         ### Other stats (precision, recall, f1, support)
         szStats = skl_metrics.classification_report(key, preds, target_names = ('Interictal', 'Ictal'))
-        print '\n============ SEIZURE DETECTION SUMMARY ============='
-        print 'Patient:', ptName
-        print szStats
+        print('\n============ SEIZURE DETECTION SUMMARY =============')
+        print('Patient:', ptName)
+        print(szStats)
 
         ### Contingency table
         tp_total = 0
@@ -66,16 +66,16 @@ def printMetrics(keyFile, predFile, ptName, printReport=True):
                 elif preds[i] == 0:
                     tn_total += 1
 
-        print 'True Positives:', tp_total
-        print 'False Positives:', fp_total
-        print 'True Negatives:', tn_total
-        print 'False Negatives:', fn_total
+        print('True Positives:', tp_total)
+        print('False Positives:', fp_total)
+        print('True Negatives:', tn_total)
+        print('False Negatives:', fn_total)
 
         ### Sensitivity and specificity
         sens = float(tp_total) / (tp_total + fn_total)
         spec = float(tn_total) / (tn_total + fp_total)
-        print 'Sensitivity:', sens
-        print 'Specificity:', spec
+        print('Sensitivity:', sens)
+        print('Specificity:', spec)
 
 if __name__ == '__main__':
     keyFile = sys.argv[1]

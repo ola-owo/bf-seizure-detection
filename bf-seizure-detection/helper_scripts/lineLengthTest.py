@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 '''
 Find line lengths at certain times, in order to figure out threshold values
 for the basic line length detector.
@@ -24,7 +24,7 @@ except:
     segments = ts.segments()
 finally:
     startTime = segments[0][0]
-    print 'start time:', startTime
+    print('start time:', startTime)
 
 def lineLength(clip):
     lengths = np.zeros(clip.shape[0]).astype('float64')
@@ -46,7 +46,7 @@ for seg in segments:
             clip = ts.get_data(start=pos, length=LL_CLIP_LENGTH, channels=ch, use_cache=False)
             # note: actual clip length may be shorter than LL_CLIP_LENGTH
         except Exception as e:
-            print 'Pull failed at time %d:' % pos, e
+            print('Pull failed at time %d:' % pos, e)
             pos += LL_CLIP_LENGTH
             continue
         if clip.empty:
@@ -59,7 +59,7 @@ for seg in segments:
 
         clip = clip.transpose().values
         length = lineLength(clip)
-        print 't', (startTime, endTime), '\tlength:', length
-        raw_input()
+        print('t', (startTime, endTime), '\tlength:', length)
+        input()
 
         pos += LL_CLIP_LENGTH

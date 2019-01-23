@@ -15,4 +15,4 @@ def get_millis():
 
 
 def get_seconds():
-    return get_millis() / 1000.0
+    return get_millis() //1000.0

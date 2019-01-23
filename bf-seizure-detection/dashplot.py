@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import datetime as dt
@@ -51,7 +51,7 @@ app.layout = html.Div([
 ])
 
 def makeScatter(seizureTimes, durations, label, height=0):
-    timestamps = map(toDateTime, seizureTimes)
+    timestamps = list(map(toDateTime, seizureTimes))
     trace = go.Scatter(
         x = timestamps,
         y = [height] * len(timestamps),
@@ -81,7 +81,7 @@ def seizuresPer(interval, seizures):
     if total == 0: return 0.0
 
     days = float(dt.timedelta(
-        microseconds = seizures[-1,0] - seizures[0,0]
+        seconds = int((seizures[-1,0] - seizures[0,0])/1e6)
     ).days)
     if days == 0: days = 1.0 # prevents division by zero errors
 
@@ -338,7 +338,7 @@ if __name__ == '__main__':
             raise ValueError("Invalid classifier '%s'" % algo)
     except IndexError:
         algo = 'pipeline'
-        print "No classifier selected, defaulting to 'pipeline'"
+        print("No classifier selected, defaulting to 'pipeline'")
 
     conn = sqlite3.connect(DIARY_DB_NAME)
     c = conn.cursor()
@@ -359,7 +359,7 @@ if __name__ == '__main__':
         # Load ROC data
         try:
             roc = hickle.load(patient + '_roc.hkl')
-            for k,v in roc.items(): roc[k] = v.tolist()
+            for k,v in list(roc.items()): roc[k] = v.tolist()
             allROCs[patient] = roc
         except:
             pass

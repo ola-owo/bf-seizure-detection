@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 '''
 Slice annotation clips into 1sec segments and save to file.
 
@@ -35,7 +35,7 @@ def sliceClips(clipDir, segType, fs, ptName):
     elif segType == 'test':
         clipFilePrefix = 'ts'
     else:
-        print "Unkown clip type '%s' (should be ictal or interictal)."
+        print("Unkown clip type '%s' (should be ictal or interictal).")
         return
 
     numClips = 0 # total number of clips
@@ -54,10 +54,10 @@ def sliceClips(clipDir, segType, fs, ptName):
 
         c = _clip(clip, fs, 4, ptName, clipSegs, segTotal, segType)
         if c < clipSegs:
-            print (clipSegs - c), 'segments skipped in', clipName
+            print((clipSegs - c), 'segments skipped in', clipName)
         segTotal += c
 
-    print '%d clips converted to %d segments.' % (numClips, segTotal)
+    print('%d clips converted to %d segments.' % (numClips, segTotal))
     return segTotal
 
 def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType):
@@ -77,17 +77,17 @@ def _clip(clip, fs, channels, ptName, clipSegs, segTotal, segType):
         data = clip[:, pos:pos+fs]
 
         if np.isnan(data).any():
-            print 'Skipped segment %d/%d of clip at position %d (some/all data is NaN)' % (i+1, clipSegs, pos)
+            print('Skipped segment %d/%d of clip at position %d (some/all data is NaN)' % (i+1, clipSegs, pos))
             nanSkips += 1
             pos += fs
             continue
         elif np.isinf(data).any():
-            print 'Skipped segment %d/%d of clip at position %d (some/all data is infinite)' % (i+1, clipSegs, pos)
+            print('Skipped segment %d/%d of clip at position %d (some/all data is infinite)' % (i+1, clipSegs, pos))
             nanSkips += 1
             pos += fs
             continue
         elif (data == 0).all(axis=1).any():
-            print 'Skipped segment %d/%d at position %d (empty channel)' % (i+1, clipSegs, pos)
+            print('Skipped segment %d/%d at position %d (empty channel)' % (i+1, clipSegs, pos))
             nanSkips += 1
             pos += fs
             continue

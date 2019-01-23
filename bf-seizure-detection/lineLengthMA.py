@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 '''
 New and improved line length seizure detector,
 using adaptive thresholds
@@ -46,31 +46,31 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
     # Make sure startTime and endTime are valid
     if startTime is not None:
         if startTime < ts.start:
-            print 'Warning: startTime', startTime, 'is before the beginning of the Timeseries. Starting from the beginning...'
+            print('Warning: startTime', startTime, 'is before the beginning of the Timeseries. Starting from the beginning...')
             startTime = None
         elif startTime > ts.end:
-            print 'Warning: startTime', startTime, 'is after the end of the Timeseries. Exiting...'
+            print('Warning: startTime', startTime, 'is after the end of the Timeseries. Exiting...')
             return ts.end
 
     if endTime is not None:
         if endTime > ts.end:
-            print 'Warning: endTime', endTime, 'is after the end of the Timeseries. Stopping at the end...'
+            print('Warning: endTime', endTime, 'is after the end of the Timeseries. Stopping at the end...')
             endTime = None
         elif endTime < ts.start:
-            print 'Warning: endTime', endTime, 'is before the beginning the Timeseries. Exiting...'
+            print('Warning: endTime', endTime, 'is before the beginning the Timeseries. Exiting...')
             return ts.start
 
     # Get/create annotation layer
     try:
         layer = ts.get_layer(layerName)
         if append:
-            print "Appending to layer '%s'" % layerName
+            print("Appending to layer '%s'" % layerName)
         else:
-            print "Overwriting layer '%s'" % layerName
+            print("Overwriting layer '%s'" % layerName)
             layer.delete()
             layer = ts.add_layer(layerName)
     except:
-        print "Creating layer '%s'" % layerName
+        print("Creating layer '%s'" % layerName)
         layer = ts.add_layer(layerName)
 
     # Find the long-term windows to start and end from
@@ -88,15 +88,15 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
     # Make sure segments list starts at startTime and ends at endTime
     segments = ts.segments(startTime, endTime+1)
     if not segments:
-        print 'No data found between %d and %d.' % (startTime, endTime), \
-              ' Exiting...'
+        print('No data found between %d and %d.' % (startTime, endTime), \
+              ' Exiting...')
         return endTime
     startTime = max(segments[0][0], startTime)
-    print 'start time:', startTime
+    print('start time:', startTime)
     segments[0] = (startTime, segments[0][1])
 
     endTime = min(segments[-1][1], endTime)
-    print 'end time:', endTime
+    print('end time:', endTime)
     segments[-1] = (segments[-1][0], endTime)
 
     # Go through each long-term window
@@ -109,7 +109,7 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
             sleep(2)
             continue
         if trend is None:
-            print 'skipping long window (no clips)...'
+            print('skipping long window (no clips)...')
             sys.stdout.flush()
             windowStart = windowEnd
             windowEnd += longWindow
@@ -152,11 +152,11 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
         for clip in shortClips:
             l = clip['length']
             if l > threshold:
-                print '+ %f (%d, %d)' % (l, clip['start'], clip['end'])
+                print('+ %f (%d, %d)' % (l, clip['start'], clip['end']))
                 layer.insert_annotation('Possible seizure',
                                         start=clip['start'], end=clip['end'])
             else:
-                print '- %f (%d, %d)' % (l, clip['start'], clip['end'])
+                print('- %f (%d, %d)' % (l, clip['start'], clip['end']))
             sys.stdout.flush()
 
         # Go to next long term window
@@ -166,13 +166,13 @@ def lineLength(ptName, startTime=None, endTime=None, append=False, layerName=LL_
 
 def _trend(ts, windowStart, windowEnd):
     'Returns: trend value, list of clips with their line lengths'
-    print 'LONG-TERM WINDOW:', windowStart, windowEnd
+    print('LONG-TERM WINDOW:', windowStart, windowEnd)
     shortClips = [] # short term windows
 
     # Get time segments within the long-term window
     windowSegs = ts.segments(windowStart, windowEnd+1)
     if not windowSegs:
-        print 'No data within the window.'
+        print('No data within the window.')
         return None, []
     _trimStart(windowStart, windowSegs)
     _trimEnd(windowEnd, windowSegs)
@@ -188,11 +188,11 @@ def _trend(ts, windowStart, windowEnd):
                 # note: actual clip length may be shorter than the short window length
             except RequestException as e:
                 # catch Blackfynn server errors
-                print 'Server error (will retry):', e
+                print('Server error (will retry):', e)
                 sleep(2)
                 continue
             except Exception as e:
-                print 'Pull failed:', e
+                print('Pull failed:', e)
                 pos += shortWindow
                 continue
             if clip.empty or clip.isnull().all().any():
@@ -219,10 +219,10 @@ def _trend(ts, windowStart, windowEnd):
 
     # Calculate trend and threshold; annotate
     if not shortClips:
-        print 'No clips could be created within the window.'
+        print('No clips could be created within the window.')
         return None, []
     trend = np.mean([clip['length'] for clip in shortClips])
-    print 'TREND:', trend
+    print('TREND:', trend)
     return trend, shortClips
 
 def _length(clip):
