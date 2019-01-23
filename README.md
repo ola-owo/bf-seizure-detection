@@ -64,7 +64,7 @@ Command: `cron.py algo > output_file`
 
 Example: `cron.py ma_linelength`
 
-Live seizure detection can be done using any of the available classifiers, depending the `algo` argument. `pipeline` uses the random forest pipeline/classifier, `linelength` uses the basic line length detector, and `ma_linelength` uses the MA line length detector. `cron.py` will, at a specified time interval, check for new EEG data and search it for possible seizures. The output is written to the file `output_file`.
+Live seizure detection can be done using any of the available classifiers, depending the `algo` argument. `pipeline` uses the random forest pipeline/classifier, `linelength` uses the basic line length detector, and `ma_linelength` uses the MA line length detector. `cron.py` will, at a specified time interval, check for new EEG data and search it for possible seizures. The output is written to the file `output_file`. NOTE: change the live/last_updated_example.json file to live/last_updated.json with patient names and upload start times. 
 
 `cron.py` also automatically maintains daily seizure diaries, displaying each patient's history of human-annotated and auto-detected seizures.
 
