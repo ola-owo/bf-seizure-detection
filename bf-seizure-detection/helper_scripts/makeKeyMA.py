@@ -12,7 +12,7 @@ import sys
 
 from settings import PL_ROOT, TS_IDs
 
-def isIctal(start, end):
+def isIctal(ictals, start, end):
     'Returns s: clip is a seizure, and e: clip is an early seizure'
     s = 0
     e = 0
@@ -64,7 +64,7 @@ def makeKey(ptName, logFile):
             endTime = int(split[3].rstrip(')'))
 
             # Check if clip is ictal
-            s, _ = isIctal(startTime, endTime)
+            s, _ = isIctal(ictals, startTime, endTime)
 
             # Write output files
             clipname = '%s-%d-%d' % (ptName, startTime, endTime)
