@@ -28,6 +28,11 @@ CHANNELS = {
     ]
 }
 
+VIDEO_DIR_IDs= {
+    #Specify collection id of video directory
+    'My_Patient': 'N:collection:XXX-XXX-XXX-XXX-XXX'
+}
+
 #########################
 ### PIPELINE SETTINGS ###
 #########################
