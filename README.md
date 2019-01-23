@@ -7,8 +7,8 @@ Three seizure detectors are included: a random forest classifier, basic line len
 ### Installing dependencies
 It is recommended to set up a virtual environment for these scripts in order to avoid conflicts with globally installed packages<sup>[1](#note-1)</sup>. This can be done using `pip`<sup>[2](#note-2)</sup> and `virtualenv`:
 ```bash
-virtualenv env
-source env/bin/activate # to enter the virtual environment
+virtualenv -p python3 env
+source env/bin/activate # to enter the virtual environment running python 3
 pip install -r requirements.txt
 deactivate # to exit the virtual environment
 ```
