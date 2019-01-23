@@ -14,7 +14,7 @@ deactivate # to exit the virtual environment
 ```
 
 ### Configuring the Blackfynn client
-For the Blackfynn API to work correctly, the user profile must be set up (see [this guide](http://docs.blackfynn.io/platform/clients/getting_started.html) for help).
+For the Blackfynn API to work correctly, the user profile must be set up (see [this guide](http://help.blackfynn.com/getting-started) for help).
 
 ### Settings
 Before running anything, make sure all of the correct settings and patient-specific info are set in `settings.py`. This file contains:
