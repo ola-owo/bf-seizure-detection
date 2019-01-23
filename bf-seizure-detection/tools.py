@@ -67,3 +67,6 @@ def toDateTime(t):
     'convert epoch time to datetime object'
     return DT.datetime.utcfromtimestamp(t//1000000)
     
+def toDateTimeFromConcatStr(s):
+    'convert string in form YYYYMMDDhhmmss to datetime'
+    return DT.datetime.strptime(s,"%Y%m%d%H%M%S")
