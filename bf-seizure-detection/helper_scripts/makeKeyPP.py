@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 '''
 Takes in a pipeline output file (XXX_seizures.txt) plus a seizure annotation
 file, and makes prediction and answer key CSVs which can be used by metrics.py
@@ -36,21 +36,21 @@ def makeKey(ptName, logFile):
 
     # Read ictal annotations
     ictals = []
-    with open(annotFile, 'rU') as f:
+    with open(annotFile, 'r') as f:
         for line in f.readlines():
-            ictals.append(map(int, line.strip().split()))
+            ictals.append(list(map(int, line.strip().split())))
 
     # Create key csv file
-    outfile_key = open(keyFile, 'wb')
+    outfile_key = open(keyFile, 'w')
     key_writer = csv.writer(outfile_key, lineterminator='\n')
     key_writer.writerow( ('clip', 'seizure', 'early') )
 
     # Create predictions csv file
-    outfile_pred = open(predFile, 'wb')
+    outfile_pred = open(predFile, 'w')
     pred_writer = csv.writer(outfile_pred, lineterminator='\n')
     pred_writer.writerow( ('clip', 'seizure', 'early') )
 
-    with open(logFile, 'rU') as f:
+    with open(logFile, 'r') as f:
         n = 0
         for line in f.readlines():
             match = re.match(ptrn, line)
@@ -69,7 +69,7 @@ def makeKey(ptName, logFile):
             pred_writer.writerow( (clipname, pred, score) )
             n += 1
 
-    print n, 'entries written.'
+    print(n, 'entries written.')
     outfile_key.close()
     outfile_pred.close()
 

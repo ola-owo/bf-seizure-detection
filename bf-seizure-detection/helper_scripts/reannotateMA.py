@@ -19,7 +19,7 @@ ts = bf.get(tsID)
 ts.get_layer(LL_MA_LAYER_NAME).delete()
 layer = ts.add_layer(LL_MA_LAYER_NAME)
 
-with open(logfile, 'rU') as f:
+with open(logfile, 'r') as f:
     trend = None
     for line in f.readlines():
         spl = line.strip().split()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 '''
 Master file for downloading EEG clips and training the classifier.
 Modeled after trainMaster.m from the old pipeline.
@@ -54,40 +54,40 @@ def pipeline(ptName, annotating=True, startTime=None, endTime=None, bf=None):
     layerName = layer.name
 
     ### Pull ictal and interictal annotation times
-    print "Reading annotations from layer '%s'..." % layerName
+    print("Reading annotations from layer '%s'..." % layerName)
     annotDir = PL_ROOT + '/annotations'
     makeDir(annotDir)
     ictals = getIctalAnnots(layer)
     makeAnnotFile(ictals, '%s/%s_annotations.txt' % (annotDir, ptName))
 
-    print 'Generating interictal annotations...'
+    print('Generating interictal annotations...')
     interictals = getInterictalAnnots(ictals, segments)
     makeAnnotFile(interictals, '%s/%s_interictal_annotations.txt' % \
                                (annotDir, ptName))
-    print ''
+    print('')
     sys.stdout.flush()
 
 
     ### Pull clips
     clipDir = PL_ROOT + '/clips/' + ptName
     makeDir(clipDir)
-    print 'Pulling ictal clips...'
+    print('Pulling ictal clips...')
     pullClips('%s/%s_annotations.txt' % (annotDir, ptName),
               'ictal', ts, clipDir, ch, limit=TRAINING_SZ_LIMIT)
-    print 'Pulling interictal clips...'
+    print('Pulling interictal clips...')
     pullClips('%s/%s_interictal_annotations.txt' % (annotDir, ptName),
               'interictal', ts, clipDir, ch)
-    print ''
+    print('')
     sys.stdout.flush()
 
     ### Slice and preprocess clips
     algoDataDir = PL_ROOT + '/seizure-data/' + ptName
     makeDir(algoDataDir)
-    print 'Preparing ictal data for classifier...'
+    print('Preparing ictal data for classifier...')
     sliceClips(clipDir, 'ictal', freq, ptName)
-    print 'Preparing interictal data for classifier...'
+    print('Preparing interictal data for classifier...')
     sliceClips(clipDir, 'interictal', freq, ptName)
-    print ''
+    print('')
     sys.stdout.flush()
 
 
@@ -97,21 +97,21 @@ def pipeline(ptName, annotating=True, startTime=None, endTime=None, bf=None):
 
 
     ### Train classifier
-    print 'Training classifier...'
+    print('Training classifier...')
     train('train_model', target=ptName)
-    print ''
+    print('')
     sys.stdout.flush()
 
 
     ### Compute cross-Validation scores
-    print 'Computing cross-validation scores...'
+    print('Computing cross-validation scores...')
     train('cv', target=ptName)
-    print ''
+    print('')
     sys.stdout.flush()
 
     if annotating:
         ### Make predictions on entire timeseries
-        print 'Testing on entire time series...'
+        print('Testing on entire time series...')
 
         try:
             # Delete layer if it already exists

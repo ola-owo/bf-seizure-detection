@@ -7,14 +7,14 @@ Three seizure detectors are included: a random forest classifier, basic line len
 ### Installing dependencies
 It is recommended to set up a virtual environment for these scripts in order to avoid conflicts with globally installed packages<sup>[1](#note-1)</sup>. This can be done using `pip`<sup>[2](#note-2)</sup> and `virtualenv`:
 ```bash
-virtualenv env
-source env/bin/activate # to enter the virtual environment
+virtualenv -p python3 env
+source env/bin/activate # to enter the virtual environment running python 3
 pip install -r requirements.txt
 deactivate # to exit the virtual environment
 ```
 
 ### Configuring the Blackfynn client
-For the Blackfynn API to work correctly, the user profile must be set up (see [this guide](http://docs.blackfynn.io/platform/clients/getting_started.html) for help).
+For the Blackfynn API to work correctly, the user profile must be set up (see [this guide](http://help.blackfynn.com/getting-started) for help).
 
 ### Settings
 Before running anything, make sure all of the correct settings and patient-specific info are set in `settings.py`. This file contains:
@@ -64,7 +64,7 @@ Command: `cron.py algo > output_file`
 
 Example: `cron.py ma_linelength`
 
-Live seizure detection can be done using any of the available classifiers, depending the `algo` argument. `pipeline` uses the random forest pipeline/classifier, `linelength` uses the basic line length detector, and `ma_linelength` uses the MA line length detector. `cron.py` will, at a specified time interval, check for new EEG data and search it for possible seizures. The output is written to the file `output_file`.
+Live seizure detection can be done using any of the available classifiers, depending the `algo` argument. `pipeline` uses the random forest pipeline/classifier, `linelength` uses the basic line length detector, and `ma_linelength` uses the MA line length detector. `cron.py` will, at a specified time interval, check for new EEG data and search it for possible seizures. The output is written to the file `output_file`. NOTE: change the live/last_updated_example.json file to live/last_updated.json with patient names and upload start times. 
 
 `cron.py` also automatically maintains daily seizure diaries, displaying each patient's history of human-annotated and auto-detected seizures.
 

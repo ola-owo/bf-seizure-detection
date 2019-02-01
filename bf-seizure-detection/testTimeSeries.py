@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 '''
 Standalone usage:
 python testTimeSeries.py ptName startTime [endTime] [annotate]
@@ -42,20 +42,20 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=T
         startTime = tsStart
     else:
         if startTime < tsStart:
-            print 'Warning: startTime', startTime, 'is before the beginning of the Timeseries. Starting from the beginning...'
+            print('Warning: startTime', startTime, 'is before the beginning of the Timeseries. Starting from the beginning...')
             startTime = tsStart
         elif startTime > tsEnd:
-            print 'Warning: startTime', startTime, 'is after the end of the Timeseries. No data will be analyzed.'
+            print('Warning: startTime', startTime, 'is after the end of the Timeseries. No data will be analyzed.')
             return
 
     if endTime is None:
         endTime = tsEnd
     else:
         if endTime > tsEnd:
-            print 'Warning: endTime', endTime, 'is after the end of the Timeseries. Stopping at the end...'
+            print('Warning: endTime', endTime, 'is after the end of the Timeseries. Stopping at the end...')
             endTime = tsEnd
         elif endTime < tsStart:
-            print 'Warning: endTime', endTime, 'is before the beginning the Timeseries. No data will be analyzed.'
+            print('Warning: endTime', endTime, 'is before the beginning the Timeseries. No data will be analyzed.')
             return
 
     segments = ts.segments(startTime, endTime)
@@ -76,7 +76,7 @@ def testTimeSeries(ts, layer, ptName, startTime=None, endTime=None, annotating=T
     for seg in segments:
         pos = max(pos, seg[0])
         while pos < seg[1]:
-            print 'Testing position (%d, %d)' % (pos, pos + PL_CLIP_LENGTH)
+            print('Testing position (%d, %d)' % (pos, pos + PL_CLIP_LENGTH))
 
             with NoPrint(): # suppress console output
                 annotFile = '%s/%s_timeseries.txt' % (annotDir, ptName)
@@ -159,9 +159,9 @@ if __name__ == '__main__':
     ts = bf.get(TS_IDs[ptName])
     layer = ts.add_layer(PL_LAYER_NAME)
 
-    print 'Testing on patient:', ptName
+    print('Testing on patient:', ptName)
     if annotating:
-        print 'Annotating enabled'
+        print('Annotating enabled')
     else:
-        print 'Annotating disabled'
+        print('Annotating disabled')
     testTimeSeries(ts, layer, ptName, startTime, endTime, annotating)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 '''
 Automatically checks for new data and tests it for seizures
 '''
@@ -36,8 +36,8 @@ def detect(bf, ptName, startTime, endTime, algo):
     try:
         ts = bf.get(TS_IDs[ptName])
     except Exception as e: # TODO: should probably make this more specific
-        print "Error getting timeseries for patient '" + ptName + "':"
-        print e
+        print("Error getting timeseries for patient '" + ptName + "':")
+        print(e)
         return startTime
 
     if algo == 'linelength':
@@ -74,22 +74,22 @@ def diary(bf, algo):
 
     patients = sorted(TS_IDs)
     for pt in patients:
-        print 'Current patient:', pt
-        print 'Updating seizure diary'
+        print('Current patient:', pt)
+        print('Updating seizure diary')
         updateDB(bf, pt, algo)
 
         if algo == 'pipeline': # TODO: implement this for the other classifiers
-            print 'Updating performance stats'
+            print('Updating performance stats')
             ts = bf.get(TS_IDs[pt])
 
             # update ictal annotations file
             if pt not in GOLD_STD_LAYERS:
-                print 'Skipping patient', pt, '(no gold standard layer)'
+                print('Skipping patient', pt, '(no gold standard layer)')
                 continue
             goldLayer = ts.get_layer(GOLD_STD_LAYERS[pt])
             anns = annots.getIctalAnnots(goldLayer)
             if not anns:
-                print 'Skipping patient', pt, '(no gold standard annotations)'
+                print('Skipping patient', pt, '(no gold standard annotations)')
                 continue
             annots.makeAnnotFile(anns, '%s/%s_annotations.txt' % (annotDir, pt))
 
@@ -98,7 +98,7 @@ def diary(bf, algo):
             try:
                 makeKeyPP.makeKey(pt, logFile)
             except IOError:
-                print 'Skipping patient', pt, '(log file not found)'
+                print('Skipping patient', pt, '(log file not found)')
                 continue
 
             # run metrics and save [patient]_roc.hkl

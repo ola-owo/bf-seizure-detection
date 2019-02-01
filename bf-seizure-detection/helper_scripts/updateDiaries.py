@@ -23,7 +23,7 @@ c = conn.cursor()
 ### Delete old entries
 try:
     for pt in TS_IDs:
-        print 'Deleting entries from:', pt
+        print('Deleting entries from:', pt)
         c.execute("DELETE FROM " + pt + " WHERE type = '" + algo + "'")
     conn.commit()
 finally:
@@ -31,5 +31,5 @@ finally:
     conn.close()
 
 ### Add new entries
-print 'Adding new entries...'
+print('Adding new entries...')
 liveDetect.diary(bf, algo)

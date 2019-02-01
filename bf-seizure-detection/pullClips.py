@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 """
 Use this to pull seizure data from Blackfynn for the pipeline.
 Can be called standalone as:
@@ -49,8 +49,8 @@ def pullClips(annotFile, clipType, ts, outDir, channels=None, limit=0):
         annots = f.read().splitlines()
         if limit > 0 and limit < len(annots):
             annots = annots[:limit]
-            print 'Using only the first %d annotations' % limit
-        annots = [map(int, annot.split()) for annot in annots]
+            print('Using only the first %d annotations' % limit)
+        annots = [list(map(int, annot.split())) for annot in annots]
 
     # pull and save each annotated clip
     clipTimes = []
@@ -67,11 +67,11 @@ def pullClips(annotFile, clipType, ts, outDir, channels=None, limit=0):
             # cache disabled to prevent malformed cache db errors
         except RequestException as e:
             # catch Blackfynn server errors
-            print 'Server error (will retry):', e
+            print('Server error (will retry):', e)
             sleep(2)
             continue
         except:
-            print 'Pull failed at (%d, %d)' % (annotStart, annotEnd)
+            print('Pull failed at (%d, %d)' % (annotStart, annotEnd))
             raise
 
         # skip clip if 1 or more channels are missing data 
@@ -100,7 +100,7 @@ def pullClips(annotFile, clipType, ts, outDir, channels=None, limit=0):
             hickle.dump(array, outfile)
             num_saved += 1
 
-    print('%d clips saved.' % num_saved)
+    print(('%d clips saved.' % num_saved))
     return clipTimes
 
 if __name__ == '__main__':

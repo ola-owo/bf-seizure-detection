@@ -20,7 +20,7 @@ layer = ts.get_layer(LL_LAYER_NAME)
 for ann in layer.annotations():
     ann.delete()
 
-with open(logfile, 'rU') as f:
+with open(logfile, 'r') as f:
     for line in f.readlines():
         spl = line.strip().split()
         if len(spl) != 4 or spl[0] not in '+-' : continue

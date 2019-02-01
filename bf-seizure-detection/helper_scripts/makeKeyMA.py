@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 '''
 Takes in a MA Line Length log file (ll-new-XXX.out)
 and makes an answer key and prediction file
@@ -12,7 +12,7 @@ import sys
 
 from settings import PL_ROOT, TS_IDs
 
-def isIctal(start, end):
+def isIctal(ictals, start, end):
     'Returns s: clip is a seizure, and e: clip is an early seizure'
     s = 0
     e = 0
@@ -34,21 +34,21 @@ def makeKey(ptName, logFile):
 
     # Read ictal annotations
     ictals = []
-    with open(annotFile, 'rU') as f:
+    with open(annotFile, 'r') as f:
         for line in f.readlines():
-            ictals.append(map(int, line.strip().split()))
+            ictals.append(list(map(int, line.strip().split())))
 
     # Create output key file
-    outfile_key = open(keyFile, 'wb')
+    outfile_key = open(keyFile, 'w')
     key_writer = csv.writer(outfile_key, lineterminator='\n')
     key_writer.writerow( ('clip', 'seizure') )
 
     # Create csv of predictions
-    outfile_pred = open(predFile, 'wb')
+    outfile_pred = open(predFile, 'w')
     pred_writer = csv.writer(outfile_pred, lineterminator='\n')
     pred_writer.writerow( ('clip', 'seizure', 'score') )
 
-    with open(logFile, 'rU') as f:
+    with open(logFile, 'r') as f:
         n = 1
         trend = None
         for line in f.readlines():
@@ -64,7 +64,7 @@ def makeKey(ptName, logFile):
             endTime = int(split[3].rstrip(')'))
 
             # Check if clip is ictal
-            s, _ = isIctal(startTime, endTime)
+            s, _ = isIctal(ictals, startTime, endTime)
 
             # Write output files
             clipname = '%s-%d-%d' % (ptName, startTime, endTime)

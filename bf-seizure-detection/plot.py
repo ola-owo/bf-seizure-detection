@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 'Usage: ./plot.py patientName algo'
 
 import datetime as dt
@@ -29,7 +29,7 @@ if not re.match(PTNAME_REGEX, patient):
     raise Exception('Invalid patient name - must only contain letters, numbers, underscores (_), and/or dashes (-)') 
 
 def makeScatter(seizureTimes, durations, label, height=0):
-    timestamps = map(toDateTime, seizureTimes)
+    timestamps = list(map(toDateTime, seizureTimes))
     trace = go.Scatter(
         x = timestamps,
         y = [height] * len(timestamps),
@@ -67,8 +67,8 @@ def seizuresPer(interval, seizures):
     else:
         raise ValueError("Interval must be 'day', 'week', or 'month'")
 
-print 'Creating seizure diary for', patient
-print 'Classifier:', algo
+print('Creating seizure diary for', patient)
+print('Classifier:', algo)
 
 # Get seizures from database
 conn = sqlite3.connect(DIARY_DB_NAME)
@@ -83,7 +83,7 @@ goldSeizures = np.array(goldSeizures, dtype='int')
 c.close()
 conn.close()
 if seizures.size == 0:
-    print 'No seizures to plot.'
+    print('No seizures to plot.')
     sys.exit()
 
 # Plot seizures

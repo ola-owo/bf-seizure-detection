@@ -42,7 +42,7 @@ class CachedDataLoader:
         data = func()
 
         if filename is not None:
-            if isinstance(data, dict) and '__use_pickle' not in data.keys():
+            if isinstance(data, dict) and '__use_pickle' not in list(data.keys()):
               if io.save_hkl_file(filename, data):
                   return wrap_data(data)
 
